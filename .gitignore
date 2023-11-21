@@ -1,0 +1,20 @@
+### Go
+*.test
+*.out
+
+### JetBrains
+/.idea/
+
+### VisualStudioCode
+/.vscode/
+
+### misc
+bin/
+dist/
+tmp/
+*.log
+*.tmp
+
+### app
+/.task/
+/data/

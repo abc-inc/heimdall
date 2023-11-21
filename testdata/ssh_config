@@ -1,0 +1,17 @@
+Host code.company.corp
+  IdentityFile ~/.ssh/code_id_rsa
+
+Host web?? www??.company.corp
+  User me
+
+Host web*
+  ControlMaster auto
+  ControlPath ~/.ssh/jump.%n.sock
+  ControlPersist 60m
+  PreferredAuthentications password
+
+Host *
+  HostName gateway.company.corp
+  PreferredAuthentications publickey
+
+AddressFamily inet

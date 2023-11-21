@@ -1,0 +1,134 @@
+version: '3'
+
+set: [ errexit, nounset, pipefail ]
+
+env:
+  TASK_PREFIX: 'task: [{{.TASK}}] '
+  WORK_DIR: '{{.USER_WORKING_DIR}}/.tmp'
+
+tasks:
+  default:
+    cmds:
+      - cmd: mkdir -p "${WORK_DIR}"
+      - task: gradle
+      - task: maven
+      - task: jacoco
+      - task: log4j-config
+      - task: log4j-library
+      - task: web.xml
+    silent: true
+
+  gradle:
+    desc: Perform Gradle-related checks.
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - heimdall echo "{{.TASK_PREFIX}}Check whether the executable flag is set."
+      - test -x gradlew
+      - heimdall echo "{{.TASK_PREFIX}}Check whether Gradle 6 or newer is used."
+      # distributionUrl is a var from gradle/wrapper/gradle-wrapper.properties.
+      # base() returns the basename of a path - the filename of the Gradle dist.
+      # matches checks whether the left side matches the given regex.
+      - cmd: base(distributionUrl) matches "gradle-[6-9][.].*-(all|bin).zip"
+        interpreter: eval
+      - heimdall echo "{{.TASK_PREFIX}}Check whether outdated GWT plugins are used."
+      - '! grep -E -m 1 "org\.wisepersist|de\.richsource\.gradle\.plugins" build.gradle'
+    env:
+      # Heimdall loads properties (and also json, xml, yaml files),
+      # and makes all key-value pairs available for the built-in interpreters.
+      HEIMDALL_FILE: gradle/wrapper/gradle-wrapper.properties
+    silent: true
+    # If this directory does not contain a gradlew, skip this task.
+    status: [ test ! -f gradlew ]
+
+  maven:
+    desc: Perform Maven-related checks.
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - heimdall echo "{{.TASK_PREFIX}}Check whether the executable flag is set."
+      - test -x mvnw
+      - heimdall echo "{{.TASK_PREFIX}}Check whether the corporate artifact repository is used."
+      - |
+        settings_file="$(grep -F -- "--settings " .mvn/maven.config | sed -E "s/.*--settings[[:space:]]+//")"
+        ids="$(heimdall xml "${settings_file}" -q "[settings.mirrors.mirror][]|[?contains(@.url, 'https://artifacts.rbi.tech/artifactory/')].id" --output text | sort | uniq)"
+        echo "Found the following mirrors in ${settings_file}: ${ids}"
+        while read -r id; do
+          heimdall xml pom.xml -q "[project.repositories.repository][]|[?@.id == '${id}' && contains(url, 'https://artifacts.rbi.tech/artifactory/')].url" --output text
+        done <<<"${ids}"
+    env:
+      HEIMDALL_FILE: .mvn/wrapper/maven-wrapper.properties
+    silent: true
+    status: [ test ! -f mvnw ]
+
+  jacoco-single-report:
+    desc: Load the aggregated jacocoTestReport.csv.
+    dir: '{{.USER_WORKING_DIR}}'
+    internal: true
+    cmds:
+      - cmd: heimdall java jacoco -f "build/reports/jacoco/test/jacocoTestReport.csv" -s >"${WORK_DIR}/jacocoTestReport.json"
+        silent: true
+    generates: [ '${WORK_DIR}/jacocoTestReport.json' ]
+    status: [ test ! -f build/reports/jacoco/test/jacocoTestReport.csv ]
+
+  jacoco-multi-report:
+    desc: Load jacocoTestReport.csv and aggregate all packages.
+    dir: '{{.USER_WORKING_DIR}}'
+    internal: true
+    cmds:
+      - cmd: heimdall java jacoco -f '*/build/reports/jacoco/test/jacocoTestReport.csv' -s >"${WORK_DIR}/jacocoTestReport.json"
+        silent: true
+    generates: [ '${WORK_DIR}/jacocoTestReport.json' ]
+    status: [ test -f build/reports/jacoco/test/jacocoTestReport.csv ]
+
+  jacoco:
+    desc: Check JaCoCo code coverage threshold.
+    deps: [ jacoco-single-report, jacoco-multi-report ]
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      HEIMDALL_FILE: '{{.WORK_DIR}}/jacocoTestReport.json'
+    cmds:
+      - cmd: heimdall echo "{{.TASK_PREFIX}}Check JaCoCo code coverage threshold."
+        silent: true
+      - cmd: line_covered / (line_covered + line_missed) >= 0.60
+        interpreter: eval
+
+  log4j-config:
+    desc: Check whether log4j 1.x is configured.
+    dir: '{{.USER_WORKING_DIR}}'
+    cmd: '! grep -Fls "log4j:configuration" **/*log*.xml*'
+    shopt: [ globstar ]
+    status: [ 'shopt -s globstar && ! test -f **/*log*.xml*' ]
+
+  log4j-library:
+    desc: Check whether log4j 1.x libraries are present.
+    dir: '{{.USER_WORKING_DIR}}'
+    cmd: heimdall java log4j --output text
+
+  web.xml:
+    desc: Check that all web.xml files are valid.
+    dir: '{{.USER_WORKING_DIR}}'
+    vars:
+      FILE:
+        sh: find . -type f -path '**/WEB-INF/*web.xml'
+    cmds:
+      - for: { var: FILE }
+        task: web.xml-file
+        vars: { FILE: '{{.ITEM}}' }
+
+  web.xml-file:
+    desc: Check that the web.xml file is valid.
+    dir: '{{.USER_WORKING_DIR}}'
+    internal: true
+    cmds:
+      - heimdall echo "{{.TASK_PREFIX}}Check that '{{.FILE}}' uses Servlet spec 3.1 or later."
+      - cmd: |
+          [[ "$(heimdall java webxml "{{.FILE}}" --output text --query 'to_number("web-app"."-version") >= `3.1`')" == "true" ]]
+      - heimdall echo "{{.TASK_PREFIX}}Check that '{{.FILE}}' does not contain synchronous servlet filters for asynchronous servlets."
+      - |
+        filters="$(heimdall java webxml --mode servlet-mappings "{{.FILE}}" --output text --jq \
+        '.["servlet-mappings"][] | select(.servlet["async-supported"] == "true") |
+        .["filter-mappings"][].filters[] | select(["async-supported"] != "true")["filter-name"]')"
+        
+        [[ -z "${filters}" ]] || { echo "${filters}" && exit 1; }
+    requires:
+      vars: [ FILE ]
+    silent: true

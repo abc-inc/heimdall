@@ -1,0 +1,109 @@
+version: '3'
+
+set: [ errexit, nounset, pipefail ]
+
+env:
+  GH_REPO:
+    sh: '[[ -n "${GH_REPO:-}" ]] || { cd "{{.USER_WORKING_DIR}}" && git remote get-url origin | sed -E "s#.*/([^/]+/[^/.]+).*#\1#"; }'
+  TASK_PREFIX: 'task: [{{.TASK}}] '
+  WORK_DIR: '{{default ".tmp" .WORK_DIR}}'
+
+tasks:
+  default:
+    desc: Perform all GitHub checks.
+    cmds:
+      - task: action-versions
+      - task: codeql-query-suite
+      - task: repo-protection
+
+  codeql-query-suite:
+    desc: Check whether CodeQL uses the extended query suite.
+    deps: [ codeql-action-config, codeql-default-setup ]
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      HEIMDALL_FILE: '{{.WORK_DIR}}/codeql-*.json'
+    cmds:
+      - cmd: heimdall echo "{{.TASK_PREFIX}}Check whether CodeQL uses the extended query suite."
+        interpreter: bash
+        silent: true
+      - (state == "configured" && query_suite == "extended") || with.queries contains "security-" || with.config contains "security-"
+    interpreter: eval
+
+  codeql-action-config:
+    desc: Fetch the CodeQL Action configuration.
+    dir: '{{.USER_WORKING_DIR}}'
+    vars:
+      FILE:
+        sh: find . -type f -path "./.github/workflows/*" -exec grep -Fl "github/codeql-action/init@" {} \+
+    cmds:
+      - cmd: heimdall echo "{{.TASK_PREFIX}}Fetch the CodeQL Action configuration from '{{.FILE}}'."
+        silent: true
+      - cmd: heimdall yaml --jq '.jobs[].steps[] | select(.uses // "" | test("^github/codeql-action/init@"))' "{{.FILE}}" >"${WORK_DIR}/codeql-action.json"
+        silent: true
+    status:
+      - 'test -f "${WORK_DIR}/codeql-action.json"'
+      - '[[ "$(wc -l <<<"{{.FILE}}" | xargs)" == 1 ]]'
+
+  codeql-default-setup:
+    desc: Fetch the CodeQL default setup configuration.
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      HEIMDALL_FILE: '{{.WORK_DIR}}/codeql-default-setup.json'
+    cmds:
+      - heimdall echo "{{.TASK_PREFIX}}Fetch the CodeQL default setup configuration."
+      - heimdall github code-scanning default-setup-configuration >"${WORK_DIR}/codeql-default-setup.json"
+    status: [ 'test -f "${WORK_DIR}/codeql-default-setup.json"' ]
+
+  action-versions:
+    desc: Check each workflow for latest approved action versions.
+    dir: '{{.USER_WORKING_DIR}}'
+    vars:
+      FILE:
+        sh: find . -type f -path "./.github/workflows/*"
+    cmds:
+      - for: { var: FILE }
+        task: action-version-file
+        vars: { FILE: '{{.ITEM}}' }
+
+  action-version-file:
+    desc: Check whether the latest approved action version is used.
+    dir: '{{.USER_WORKING_DIR}}'
+    internal: true
+    cmds:
+      - heimdall echo "{{.TASK_PREFIX}}Check for 'actions/checkout@v3' in '{{.FILE}}'"
+      - '[[ "$(heimdall yaml --jq "[(.jobs.[].steps[].uses // \"\") | select(test(\"^actions/checkout\"))] | all(. == \"actions/checkout@v3\")" "{{.FILE}}")" == "true" ]]'
+    requires:
+      vars: [ FILE ]
+    silent: true
+
+  repo-protection:
+    desc: Check whether the repository is protected from unauthorized commits.
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - heimdall echo "{{.TASK_PREFIX}}Check whether CODEOWNERS file is present."
+      - '[[ -n "$(heimdall github repositories contents --path CODEOWNERS --jq ".content")" ]]'
+      - heimdall echo "{{.TASK_PREFIX}}Check branch protection rules."
+      - heimdall github repositories get >"${WORK_DIR}/repo.json"
+      - task: repo-protection-branch
+        vars:
+          BRANCH:
+            sh: heimdall json "{{.WORK_DIR}}/repo.json" -q "default_branch"
+    silent: true
+
+  repo-protection-branch:
+    desc: Check whether the repository is protected from unauthorized commits.
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      HEIMDALL_FILE: '{{.WORK_DIR}}/branch-protection-{{.BRANCH}}.json'
+    internal: true
+    cmds:
+      - cmd: heimdall github repositories branch-protection --branch "{{.BRANCH}}" >"${HEIMDALL_FILE}"
+        interpreter: bash
+        silent: true
+      - required_pull_request_reviews.dismiss_stale_reviews
+      - required_pull_request_reviews.require_code_owner_reviews
+      - required_pull_request_reviews.required_approving_review_count > 0
+      - enforce_admins.enabled
+    interpreter: eval
+    requires:
+      vars: [ BRANCH ]

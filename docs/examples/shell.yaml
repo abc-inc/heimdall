@@ -1,0 +1,33 @@
+version: '3'
+
+set: [ errexit, nounset, pipefail ]
+
+env:
+  TASK_PREFIX: 'task: [{{.TASK}}] '
+
+tasks:
+  default:
+    cmds:
+      - task: win-line-separator
+
+  win-line-separator:
+    desc: Check for Windows line separators in shell scripts.
+    dir: '{{.USER_WORKING_DIR}}'
+    vars:
+      FILE:
+        sh: 'find . -type d -path "*/.*" -prune -o -not -name ".*" -type f -size -1M -exec file --mime-type -p {} + | grep -F text/x-shellscript | cut -d : -f 1'
+    cmds:
+      - for: { var: FILE }
+        task: win-line-separator-file
+        vars: { FILE: '{{.ITEM}}' }
+
+  win-line-separator-file:
+    desc: Check for Windows line separator in a shell script.
+    dir: '{{.USER_WORKING_DIR}}'
+    internal: true
+    cmds:
+      - heimdall echo "{{.TASK_PREFIX}}Check for Windows line separators in shell script '{{.FILE}}'"
+      - grep -Fvq $'\r' "{{.FILE}}"
+    requires:
+      vars: [ FILE ]
+    silent: true
