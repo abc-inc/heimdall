@@ -5,7 +5,6 @@ go 1.21
 toolchain go1.21.0
 
 require (
-	code.rbi.tech/raiffeisen/servicenow-cli v0.0.0-20230401135333-2bccefa2c3e7
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/abc-inc/gutenfmt v0.1.1
 	github.com/alecthomas/chroma/v2 v2.9.1

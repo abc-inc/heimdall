@@ -1,0 +1,21 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+  pull_request:
+    branches: [master]
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    uses: abc-inc/gh-actions-go-workflows/.github/workflows/build.yml@master

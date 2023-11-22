@@ -16,5 +16,5 @@ package heimdall
 
 import "embed"
 
-//go:embed docs/*.md docs/**/*.md docs/github.com docs/examples/*.yaml docs/images/**
+//go:embed docs/*.md docs/**/*.md docs/github.com docs/examples/*.yaml
 var StaticFS embed.FS

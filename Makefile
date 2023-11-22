@@ -1,5 +1,5 @@
 export CGO_ENABLED ?= 0
-GOFLAGS += -trimpath
+GOFLAGS += -buildvcs -trimpath
 LDFLAGS += -X main.version=$(VERSION)
 INSTALL ?= install
 INSTALL_PROGRAM ?= $(INSTALL)
@@ -13,9 +13,7 @@ tmpdir = tmp
 
 all: test build
 
-build:
-	@mkdir -p "$(builddir)"
-	# GOOS= GOARCH= go generate -x ./...
+build: generate
 	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o "$(builddir)/" ./...
 
 check:
@@ -28,6 +26,10 @@ clean:
 dist:
 	$(MAKE) bindir="$(distdir)/$(notdir $(CURDIR))" install
 	tar -C $(distdir) -cvf "$(distdir)/$(notdir $(CURDIR)).tar.gz" "$(notdir $(CURDIR))"
+
+generate:
+	@mkdir -p "$(builddir)"
+	GOOS= GOARCH= go generate -x ./...
 
 install: all
 	$(INSTALL_PROGRAM) -Dt "$(DESTDIR)$(bindir)" "$(builddir)"/*
