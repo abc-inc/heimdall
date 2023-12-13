@@ -29,12 +29,11 @@ import (
 func NewRepoCmd() *cobra.Command {
 	var branch string
 	var protected bool
-	cfg := &ghCfg{
-		branch:      &branch,
-		protected:   &protected,
-		visibility:  "all",
-		affiliation: "owner,collaborator,organization_member",
-	}
+	cfg := newGHCfg()
+	cfg.branch = &branch
+	cfg.protected = &protected
+	cfg.visibility = "all"
+	cfg.affiliation = "owner,collaborator,organization_member"
 
 	cmd := &cobra.Command{
 		Use:   "repositories",
@@ -116,7 +115,7 @@ func NewRepoCmd() *cobra.Command {
 		case "admin-enforcement":
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
 		case "all":
-			sub.Flags().StringVar(&cfg.since, "since", cfg.since, "A repository ID. Only return repositories with an ID greater than this ID.")
+			sub.Flags().Int64Var(&cfg.sinceID, "since", cfg.sinceID, "A repository ID. Only return repositories with an ID greater than this ID.")
 		case "archive-link":
 			addItemFlags(cfg, sub)
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
@@ -160,8 +159,8 @@ func NewRepoCmd() *cobra.Command {
 			sub.Flags().StringVar(&cfg.visibility, "visibility", cfg.visibility, "Visibility (all, public, private)")
 			sub.Flags().StringVar(&cfg.affiliation, "affiliation", cfg.affiliation, "Comma-separated list of (owner, collaborator, organization_member)")
 			sub.Flags().StringVar(&cfg.typ, "typ", cfg.typ, "Tag name for the release. This can be an existing tag or a new one.")
-			sub.Flags().StringVar(&cfg.sort, "sort", cfg.sort, "Tag name for the release. This can be an existing tag or a new one.")
-			sub.Flags().StringVar(&cfg.direction, "direction", cfg.direction, "Tag name for the release. This can be an existing tag or a new one.")
+			sub.Flags().StringVar(cfg.sort, "sort", *cfg.sort, "Tag name for the release. This can be an existing tag or a new one.")
+			sub.Flags().StringVar(cfg.direction, "direction", *cfg.direction, "Tag name for the release. This can be an existing tag or a new one.")
 		case "permission-level":
 			sub.Flags().StringVar(&cfg.user, "username", cfg.user, "Handle for the GitHub user account.")
 		case "pre-receive-hook":
@@ -196,6 +195,7 @@ func NewRepoCmd() *cobra.Command {
 }
 
 func execRepos(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
+	setHostOwnerRepo(cfg, cfg.host, cfg.owner, cfg.repo)
 	cfg.client = newClient()
 	svc := cfg.client.Repositories
 
@@ -213,7 +213,7 @@ func execRepos(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
 	case "admin-enforcement":
 		x, _, err = svc.GetAdminEnforcement(getCtx(cfg), cfg.owner, cfg.repo, *cfg.branch)
 	case "all":
-		x, _, err = svc.ListAll(getCtx(cfg), &github.RepositoryListAllOptions{Since: 0})
+		x, _, err = svc.ListAll(getCtx(cfg), &github.RepositoryListAllOptions{Since: cfg.sinceID})
 	case "all-topics":
 		x, _, err = svc.ListAllTopics(getCtx(cfg), cfg.owner, cfg.repo)
 	case "archive-link":
@@ -257,7 +257,7 @@ func execRepos(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
 			SHA:         cfg.sha,
 			Path:        cfg.path,
 			Author:      cfg.author,
-			Since:       time.Time{},
+			Since:       cfg.sinceTime,
 			Until:       time.Time{},
 			ListOptions: github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
 		})

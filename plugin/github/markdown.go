@@ -39,7 +39,9 @@ func NewMarkdownCmd() *cobra.Command {
 }
 
 func execMarkdown(cfg *ghCfg, md string) (string, error) {
+	setHostOwnerRepo(cfg, cfg.host, cfg.owner, cfg.repo)
 	cfg.client = newClient()
+
 	opts := &github.MarkdownOptions{Mode: "markdown", Context: ""}
 	text, _, err := cfg.client.Markdown.Render(getCtx(cfg), md, opts)
 	return text, err

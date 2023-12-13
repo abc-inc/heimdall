@@ -26,7 +26,7 @@ import (
 )
 
 func NewSecretScanCmd() *cobra.Command {
-	cfg := &ghCfg{}
+	cfg := newGHCfg()
 	cmd := &cobra.Command{
 		Use:   "secret-scanning",
 		Short: "Handles communication with the secret scanning related methods.",
@@ -44,7 +44,7 @@ func NewSecretScanCmd() *cobra.Command {
 	for _, sub := range cmd.Commands() {
 		addRepoFlags(cfg, sub)
 		if sub.Name() == "alerts-for-repo" {
-			sub.Flags().StringVar(&cfg.state, "state", cfg.state, "State of the secret scanning alerts to list.")
+			sub.Flags().StringVar(cfg.state, "state", *cfg.state, "State of the secret scanning alerts to list.")
 			sub.Flags().StringSliceVar(&cfg.secretType, "secret-type", cfg.secretType, "A comma-separated list of secret types to return.")
 			sub.Flags().StringSliceVar(&cfg.resolution, "resolution", cfg.resolution, "false_positive, wont_fix, revoked, pattern_edited, pattern_deleted or used_in_tests.")
 		}
@@ -58,14 +58,16 @@ func NewSecretScanCmd() *cobra.Command {
 }
 
 func execSecretScan(cfg *ghCfg, cmd *cobra.Command) (a any, err error) {
+	setHostOwnerRepo(cfg, cfg.host, cfg.owner, cfg.repo)
 	cfg.client = newClient()
 	svc := cfg.client.SecretScanning
+
 	switch cmd.Name() {
 	case "alert":
 		a, _, err = svc.GetAlert(getCtx(cfg), cfg.owner, cfg.repo, cfg.id)
 	case "alerts-for-repo":
 		a, _, err = svc.ListAlertsForRepo(getCtx(cfg), cfg.owner, cfg.repo, &github.SecretScanningAlertListOptions{
-			State:             cfg.state,
+			State:             *cfg.state,
 			SecretType:        strings.Join(cfg.secretType, ","),
 			Resolution:        strings.Join(cfg.resolution, ","),
 			ListCursorOptions: github.ListCursorOptions{},

@@ -19,9 +19,10 @@ import (
 	"errors"
 	"net/http"
 	"os"
-	"path/filepath"
+	"path"
 	"reflect"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/abc-inc/goava/base/casefmt"
@@ -53,14 +54,17 @@ type ghCfg struct {
 	page    int
 	perPage int
 	// CodeScan
-	state    string
-	severity string
+	state    *string
+	severity *string
 	// Dependabot
-	ecosystem string
-	pkg       string
-	scope     string
-	sort      string
-	direction string
+	ecosystem *string
+	pkg       *string
+	scope     *string
+	sort      *string
+	direction *string
+	toolName  *string
+	// PR
+	reviewID int64
 	// Repos
 	affiliation string
 	author      string
@@ -70,7 +74,8 @@ type ghCfg struct {
 	protected   *bool
 	ref         string
 	sha         string
-	since       string
+	sinceID     int64
+	sinceTime   time.Time
 	tag         string
 	typ         string
 	user        string
@@ -81,6 +86,19 @@ type ghCfg struct {
 	resolution []string
 	// Output
 	console.OutCfg
+}
+
+func newGHCfg() *ghCfg {
+	direction, ecosystem, pkg, scope, severity, sort, state := "", "", "", "", "", "created", "open"
+	return &ghCfg{
+		direction: &direction,
+		ecosystem: &ecosystem,
+		pkg:       &pkg,
+		scope:     &scope,
+		severity:  &severity,
+		sort:      &sort,
+		state:     &state,
+	}
 }
 
 func NewGitHubCmd() *cobra.Command {
@@ -94,6 +112,7 @@ func NewGitHubCmd() *cobra.Command {
 		NewCodeScanCmd(),
 		NewDependabotCmd(),
 		NewMarkdownCmd(),
+		NewPRCmd(),
 		NewRepoCmd(),
 		NewSecretScanCmd(),
 	)
@@ -107,19 +126,32 @@ func addRepoFlags(cfg *ghCfg, cmd *cobra.Command) {
 		cfg.token = os.Getenv("GITHUB_TOKEN")
 	}
 
-	cfg.host = os.Getenv("GH_HOST")
-	cfg.owner = os.Getenv("GH_OWNER")
-	repoParts := strings.SplitN(os.Getenv("GH_REPO"), "/", 3)
-	cfg.repo = repoParts[len(repoParts)-1]
-	if len(repoParts) == 3 {
-		cfg.host = repoParts[0]
-	}
-	if len(repoParts) >= 2 {
-		cfg.owner = repoParts[len(repoParts)-2]
-	}
+	cfg.host, cfg.owner, cfg.repo = os.Getenv("GH_HOST"), os.Getenv("GH_OWNER"), os.Getenv("GH_REPO")
+	setHostOwnerRepo(cfg, cfg.host, cfg.owner, cfg.repo)
 
 	cmd.Flags().StringVar(&cfg.owner, "owner", cfg.owner, "Owner/org of the repository")
 	cmd.Flags().StringVar(&cfg.repo, "repo", cfg.repo, "Repository name")
+}
+
+func setHostOwnerRepo(cfg *ghCfg, host, owner, repo string) {
+	repoParts := strings.SplitN(repo, "/", 3)
+	h, o, r := host, owner, repoParts[len(repoParts)-1]
+	if h != "" {
+		cfg.host = h
+	}
+	if o != "" {
+		cfg.owner = o
+	}
+	if r != "" {
+		cfg.repo = r
+	}
+
+	if len(repoParts) >= 2 {
+		cfg.owner = repoParts[len(repoParts)-2]
+		if len(repoParts) == 3 {
+			cfg.host = repoParts[0]
+		}
+	}
 }
 
 func addListFlags(cfg *ghCfg, cmd *cobra.Command) {
@@ -165,15 +197,20 @@ func createCmds(cfg *ghCfg, svcTyp reflect.Type, inv Inv, list []string) (cmds [
 			ok := slices.Contains(list, name)
 			internal.MustOkMsgf(ok, ok, "cannot find handler for '%s' '%s'", svcTyp, name)
 
-			p := filepath.Join("docs", "github.com", "google", "go-github", "v56@v56.0.0", "github", svcTyp.Elem().Name(), m.Name+".txt")
+			p := path.Join("docs", "github.com", "google", "go-github", "v56@v56.0.0", "github", svcTyp.Elem().Name(), m.Name+".txt")
 			desc := string(internal.Must(heimdall.StaticFS.ReadFile(p)))
 			_, desc, _ = strings.Cut(desc, " ")
 			desc = string(unicode.ToUpper(rune(desc[0]))) + desc[1:]
-			line, _, _ := strings.Cut(desc, "\n")
+			line, _, _ := strings.Cut(desc, ".")
+			line = strings.ReplaceAll(line, "\n", " ") + "."
 
 			kind, fTyp := "", m.Func.Type()
 			if last := fTyp.In(fTyp.NumIn() - 1); last.AssignableTo(reflect.TypeOf(&github.ListOptions{})) {
 				kind = "list"
+			} else if last.Kind() == reflect.Ptr && last.Elem().Kind() == reflect.Struct {
+				if lo, ok := last.Elem().FieldByName("ListOptions"); ok && lo.Type.AssignableTo(reflect.TypeOf(github.ListOptions{})) {
+					kind = "list"
+				}
 			}
 
 			cmds = append(cmds, &cobra.Command{
@@ -231,6 +268,9 @@ func newClient() *github.Client {
 
 	src := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: t})
 	httpClient := oauth2.NewClient(context.Background(), src)
+	if strings.HasPrefix(url, "https://api.github.com") {
+		return github.NewClient(httpClient)
+	}
 	return internal.Must(github.NewClient(httpClient).WithEnterpriseURLs(url+"/v3/", url+"/uploads/"))
 }
 

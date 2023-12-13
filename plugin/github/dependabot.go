@@ -25,7 +25,7 @@ import (
 )
 
 func NewDependabotCmd() *cobra.Command {
-	cfg := &ghCfg{sort: "created"}
+	cfg := newGHCfg()
 	cmd := &cobra.Command{
 		Use:   "dependabot",
 		Short: "Handles communication with the Dependabot related methods.",
@@ -48,13 +48,13 @@ func NewDependabotCmd() *cobra.Command {
 		case "repo-alert":
 			addItemFlags(cfg, sub)
 		case "repo-alerts":
-			sub.Flags().StringVar(&cfg.state, "state", cfg.state, "Comma-separated list of states (auto_dismissed, dismissed, fixed, open)")
-			sub.Flags().StringVar(&cfg.severity, "severity", cfg.severity, "Comma-separated list of severities (low, medium, high, critical)")
-			sub.Flags().StringVar(&cfg.ecosystem, "ecosystem", cfg.ecosystem, "Comma-separated list of ecosystems. If specified, only alerts for these ecosystems will be returned (composer, go, maven, npm, nuget, pip, pub, rubygems, rust)")
-			sub.Flags().StringVar(&cfg.pkg, "package", cfg.pkg, "Comma-separated list of package names")
-			sub.Flags().StringVar(&cfg.scope, "scope", cfg.scope, "Scope of the vulnerable dependency (development, runtime)")
-			sub.Flags().StringVar(&cfg.sort, "sort", cfg.sort, "The property by which to sort the results (created, updated)")
-			sub.Flags().StringVar(&cfg.direction, "direction", cfg.direction, "The direction to sort the results by (asc, desc)")
+			sub.Flags().StringVar(cfg.state, "state", *cfg.state, "Comma-separated list of states (auto_dismissed, dismissed, fixed, open)")
+			sub.Flags().StringVar(cfg.severity, "severity", *cfg.severity, "Comma-separated list of severities (low, medium, high, critical)")
+			sub.Flags().StringVar(cfg.ecosystem, "ecosystem", *cfg.ecosystem, "Comma-separated list of ecosystems. If specified, only alerts for these ecosystems will be returned (composer, go, maven, npm, nuget, pip, pub, rubygems, rust)")
+			sub.Flags().StringVar(cfg.pkg, "package", *cfg.pkg, "Comma-separated list of package names")
+			sub.Flags().StringVar(cfg.scope, "scope", *cfg.scope, "Scope of the vulnerable dependency (development, runtime)")
+			sub.Flags().StringVar(cfg.sort, "sort", *cfg.sort, "The property by which to sort the results (created, updated)")
+			sub.Flags().StringVar(cfg.direction, "direction", *cfg.direction, "The direction to sort the results by (asc, desc)")
 		case "repo-secret":
 			sub.Flags().StringVar(&cfg.name, "secret-name", cfg.name, "Name of the secret")
 		}
@@ -65,20 +65,22 @@ func NewDependabotCmd() *cobra.Command {
 }
 
 func execDependabot(cfg *ghCfg, cmd *cobra.Command) (a any, err error) {
+	setHostOwnerRepo(cfg, cfg.host, cfg.owner, cfg.repo)
 	cfg.client = newClient()
 	svc := cfg.client.Dependabot
+
 	switch cmd.Name() {
 	case "repo-alert":
 		a, _, err = svc.GetRepoAlert(getCtx(cfg), cfg.owner, cfg.repo, int(cfg.id))
 	case "repo-alerts":
 		a, _, err = svc.ListRepoAlerts(getCtx(cfg), cfg.owner, cfg.repo, &github.ListAlertsOptions{
-			State:             &cfg.state,
-			Severity:          &cfg.severity,
-			Ecosystem:         &cfg.ecosystem,
-			Package:           &cfg.pkg,
-			Scope:             &cfg.scope,
-			Sort:              &cfg.sort,
-			Direction:         &cfg.direction,
+			State:             cfg.state,
+			Severity:          cfg.severity,
+			Ecosystem:         cfg.ecosystem,
+			Package:           cfg.pkg,
+			Scope:             cfg.scope,
+			Sort:              cfg.sort,
+			Direction:         cfg.direction,
 			ListOptions:       github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
 			ListCursorOptions: github.ListCursorOptions{},
 		})

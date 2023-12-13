@@ -26,7 +26,9 @@ import (
 
 func NewCodeScanCmd() *cobra.Command {
 	var branch string
-	cfg := &ghCfg{branch: &branch}
+	cfg := newGHCfg()
+	cfg.branch = &branch
+
 	cmd := &cobra.Command{
 		Use:   "code-scanning",
 		Short: "Handles communication with the code scanning related methods.",
@@ -53,15 +55,12 @@ func NewCodeScanCmd() *cobra.Command {
 			addItemFlags(cfg, sub)
 		case "alert-instances":
 			addItemFlags(cfg, sub)
-			addListFlags(cfg, sub)
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
 		case "alerts-for-repo":
-			addListFlags(cfg, sub)
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
-			sub.Flags().StringVar(&cfg.state, "state", cfg.state, "Alert state")
-			sub.Flags().StringVar(&cfg.severity, "severity", cfg.severity, "Severity")
+			sub.Flags().StringVar(cfg.state, "state", *cfg.state, "Alert state")
+			sub.Flags().StringVar(cfg.severity, "severity", *cfg.severity, "Severity")
 		case "analyses-for-repo":
-			addListFlags(cfg, sub)
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
 			sub.Flags().StringVar(&cfg.sarifID, "sarif", cfg.sarifID, "SARIF ID obtained after uploading")
 		case "analysis:":
@@ -76,6 +75,7 @@ func NewCodeScanCmd() *cobra.Command {
 }
 
 func execCodeScan(cfg *ghCfg, cmd *cobra.Command) (a any, err error) {
+	setHostOwnerRepo(cfg, cfg.host, cfg.owner, cfg.repo)
 	cfg.client = newClient()
 	svc := cfg.client.CodeScanning
 
@@ -93,10 +93,10 @@ func execCodeScan(cfg *ghCfg, cmd *cobra.Command) (a any, err error) {
 		})
 	case "alerts-for-repo":
 		a, _, err = svc.ListAlertsForRepo(getCtx(cfg), cfg.owner, cfg.repo, &github.AlertListOptions{
-			State:             cfg.state,
+			State:             *cfg.state,
 			Ref:               *cfg.branch,
-			Severity:          cfg.severity,
-			ToolName:          "",
+			Severity:          *cfg.severity,
+			ToolName:          *cfg.toolName,
 			ListCursorOptions: github.ListCursorOptions{},
 			ListOptions:       github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
 		})
