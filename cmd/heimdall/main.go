@@ -53,7 +53,7 @@ import (
 const version = "0.0"
 
 func main() {
-	d := internal.Must(time.Parse(time.DateOnly, "2023-11-30"))
+	d := internal.Must(time.Parse(time.DateOnly, "2024-01-01"))
 	if time.Now().After(d) {
 		log.Warn().Msgf("This is an experimental build and stopped working after %s.", d.Format(time.DateOnly))
 		os.Exit(1)

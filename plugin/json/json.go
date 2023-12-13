@@ -17,11 +17,13 @@ package json
 import (
 	"encoding/json"
 	"maps"
+	"reflect"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -58,8 +60,17 @@ func processJSON(f string) map[string]any {
 }
 
 func ReadJSON(name string) (m map[string]any) {
+	var in any
 	r := internal.Must(res.Open(name))
 	defer func() { _ = r.Close() }()
-	internal.MustNoErr(json.NewDecoder(r).Decode(&m))
+	internal.MustNoErr(json.NewDecoder(r).Decode(&in))
+	switch k := reflect.TypeOf(in).Kind(); k {
+	case reflect.Map:
+		return in.(map[string]any)
+	case reflect.Array, reflect.Slice:
+		return map[string]any{"data": in}
+	default:
+		log.Fatal().Stringer("kind", k).Msg("cannot unmarshall data")
+	}
 	return
 }
