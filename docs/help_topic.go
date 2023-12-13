@@ -42,6 +42,7 @@ type Topic struct {
 var Topics = []Topic{
 	{File: "man/expr-lang.md", Desc: "Overview for expr (built-in expression language)"},
 	{File: "contributing.md", Desc: "Information for improving Heimdall"},
+	{File: "formatting.md", Desc: "Description of output formats and filters"},
 	{File: "source.md", Desc: "Instructions for building Heimdall from source"},
 	{File: "why.md", Desc: fmt.Sprintf("Why %s?", color.New(color.Italic).Sprint("Heimdall"))},
 }
@@ -49,7 +50,7 @@ var Topics = []Topic{
 func init() {
 	for _, f := range internal.Must(heimdall.StaticFS.ReadDir("docs/examples")) {
 		d := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
-		Topics = append(Topics, Topic{File: filepath.Join("examples", f.Name()), Desc: "Example for " + d})
+		Topics = append(Topics, Topic{File: path.Join("examples", f.Name()), Desc: "Example for " + d})
 	}
 }
 

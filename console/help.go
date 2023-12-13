@@ -107,7 +107,7 @@ func RootHelpFunc(cmd *cobra.Command, _ []string) {
 	}
 	if longText != "" && cmd.LocalFlags().Lookup("jq") != nil {
 		longText = strings.TrimRight(longText, "\n") +
-			"\n\nFor more information about output formatting flags, see `heimdall help formatting`."
+			"\n\nFor more information about output formatting flags, see `heimdall help:formatting`."
 	}
 
 	es := []helpEntry{}
