@@ -40,6 +40,7 @@ func NewJiraCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
+		NewDevStatusCmd(),
 		NewIssueCmd(),
 		NewVersionCmd(),
 	)

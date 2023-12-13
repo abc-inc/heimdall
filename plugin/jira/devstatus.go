@@ -16,6 +16,7 @@ package jira
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"time"
 
@@ -26,24 +27,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type jiraIssueCfg struct {
-	jql string
+type jiraDevStatusCfg struct {
+	issueID string
 	jiraCfg
 }
 
-func NewIssueCmd() *cobra.Command {
-	cfg := jiraIssueCfg{jiraCfg: jiraCfg{baseURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
+func NewDevStatusCmd() *cobra.Command {
+	cfg := jiraDevStatusCfg{jiraCfg: jiraCfg{baseURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
 	cmd := &cobra.Command{
-		Use:   "issue",
-		Short: "Search Jira issues",
+		Use:   "dev-status",
+		Short: "Get details about the development status.",
 		Example: heredoc.Doc(`
-			# list the top 10 open bugs and return all details (including nested fields) about assignee, priority and summary.
-			heimdall jira issue --filter "project = ABC AND type = Bug AND resolution = Unresolved ORDER BY priority DESC, updated DESC" \
-			    --fields 'assignee,priority,summary' --max-results 10
-			
-			# list all stories and output a custom formatted JSON for summarizing the release notes
-			heimdall jira issue --filter "project = ABC AND type = Story AND fixVersion='ABC 1.2' ORDER BY id" \
-			    --jq ".[] | {id: .key, summary: .fields.summary, status: .fields.status.name}"
 		`),
 		Args: cobra.ExactArgs(0),
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -57,26 +51,27 @@ func NewIssueCmd() *cobra.Command {
 				return err
 			}
 
-			is, _, err := listIssues(client, cfg)
+			vs, _, err := getDetails(client, cfg)
 			if err == nil {
-				console.Fmtln(is)
+				console.Fmtln(vs)
 			}
 			return err
 		},
 	}
 
-	cmd.Flags().StringVar(&cfg.jql, "filter", cfg.jql, "JQL query for searching")
+	cmd.Flags().StringVarP(&cfg.issueID, "issue-id", "i", cfg.issueID, "ID of the Jira issue")
 	addCommonFlags(cmd, &cfg.jiraCfg)
 
 	console.AddOutputFlags(cmd, &cfg.OutCfg)
-	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
-	cfg.opts = addSearchOpts(cmd)
+	internal.MustNoErr(cmd.MarkFlagRequired("issue-id"))
 	return cmd
 }
 
-// listIssues searches for Jira issues matching the given JQL query and search options.
-func listIssues(client *jira.Client, cfg jiraIssueCfg) ([]jira.Issue, *jira.Response, error) {
+func getDetails(client *jira.Client, cfg jiraDevStatusCfg) (body map[string]any, resp *jira.Response, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.timeout)
 	defer cancel()
-	return client.Issue.SearchWithContext(ctx, cfg.jql, cfg.opts)
+	req := internal.Must(client.NewRequestWithContext(ctx, http.MethodGet,
+		"/rest/dev-status/1.0/issue/detail?issueId="+cfg.issueID+"&applicationType=githube&dataType=repository", nil))
+	resp, err = client.Do(req, &body)
+	return
 }
