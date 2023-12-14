@@ -40,6 +40,7 @@ import (
 	"github.com/abc-inc/heimdall/plugin/properties"
 	"github.com/abc-inc/heimdall/plugin/run"
 	"github.com/abc-inc/heimdall/plugin/ssh"
+	"github.com/abc-inc/heimdall/plugin/toml"
 	"github.com/abc-inc/heimdall/plugin/xml"
 	"github.com/abc-inc/heimdall/plugin/yaml"
 	"github.com/joho/godotenv"
@@ -87,6 +88,7 @@ func main() {
 		properties.NewPropertiesCmd(),
 		run.NewRunCmd(),
 		ssh.NewSSHCmd(),
+		toml.NewTOMLCmd(),
 		xml.NewXMLCmd(),
 		yaml.NewYAMLCmd(),
 		versionCmd(),

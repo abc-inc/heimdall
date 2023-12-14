@@ -5,6 +5,7 @@ go 1.21
 toolchain go1.21.0
 
 require (
+	github.com/BurntSushi/toml v1.3.2
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/abc-inc/gutenfmt v0.1.1
 	github.com/alecthomas/chroma/v2 v2.9.1
@@ -12,6 +13,7 @@ require (
 	github.com/antonmedv/expr v1.12.0
 	github.com/aquasecurity/go-dep-parser v0.0.0-20230315140444-2c62bb5726f4
 	github.com/charmbracelet/glamour v0.6.1-0.20230531150759-6d5b52861a9d
+	github.com/charmbracelet/gum v0.11.0
 	github.com/cli/go-gh/v2 v2.3.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/dolmen-go/kittyimg v0.0.0-20220904140504-22f6493b700f
@@ -26,6 +28,7 @@ require (
 	github.com/jfrog/build-info-go v1.8.6
 	github.com/jfrog/gofrog v1.2.5
 	github.com/jfrog/jfrog-client-go v1.26.1
+	github.com/jmespath/go-jmespath v0.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/joshdk/go-junit v1.0.0
 	github.com/kevinburke/ssh_config v1.2.0
@@ -49,7 +52,6 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.7.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
@@ -78,7 +80,6 @@ require (
 	github.com/cenkalti/backoff/v3 v3.0.0 // indirect
 	github.com/charmbracelet/bubbles v0.16.1 // indirect
 	github.com/charmbracelet/bubbletea v0.24.2 // indirect
-	github.com/charmbracelet/gum v0.11.0 // indirect
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
 	github.com/charmbracelet/lipgloss v0.8.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
@@ -151,7 +152,6 @@ require (
 	github.com/itchyny/timefmt-go v0.1.5 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jedib0t/go-pretty v4.3.0+incompatible // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
@@ -169,7 +169,7 @@ require (
 	github.com/mergestat/mergestat-lite v0.6.1 // indirect
 	github.com/mergestat/timediff v0.0.3 // indirect
 	github.com/mholt/archiver/v3 v3.5.1 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.23 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.26 // indirect
 	github.com/minio/sha256-simd v1.0.1-0.20210617151322-99e45fae3395 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
