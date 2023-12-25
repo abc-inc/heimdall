@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
 
@@ -105,6 +106,15 @@ func main() {
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error, fatal)")
 
 	cobra.OnInitialize(func() { initConfig(rootCmd) })
+
+	exe := filepath.Base(os.Args[0])
+	if strings.HasPrefix(exe, "hd-") || strings.HasPrefix(exe, "heimdall-") {
+		parts := strings.Split(exe, "-")[1:]
+		os.Args = slices.Insert(os.Args, 1, parts...)
+	} else if !strings.HasPrefix(exe, "hd") && !strings.HasPrefix(exe, "heimdall") {
+		parts := strings.Split(exe, "-")
+		os.Args = slices.Insert(os.Args, 1, parts...)
+	}
 
 	if err := rootCmd.Execute(); err != nil &&
 		!strings.HasPrefix(err.Error(), "unknown command ") &&

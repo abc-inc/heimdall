@@ -108,7 +108,7 @@ func NewEvalCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&cfg.engine, "engine", "E", cfg.engine, `Engine to use ("`+strings.Join(names, `", "`)+`")`)
 	cmd.Flags().StringArrayVarP(&cfg.expr, "expression", "e", cfg.expr, "Expression to evaluate against the input files. May be provided multiple times.")
 	cmd.Flags().BoolVar(&cfg.ignMiss, "ignore-missing", cfg.ignMiss, "Don't fail or report status for missing files")
-	cmd.Flags().BoolVarP(&cfg.quiet, "quiet", "q", false, "Enable quiet mode (suppress normal output)")
+	cmd.Flags().BoolVar(&cfg.quiet, "quiet", false, "Enable quiet mode (suppress normal output)")
 	cmd.Flags().BoolVarP(&cfg.verbose, "verbose", "v", false, "Enable verbose mode")
 
 	console.AddOutputFlag(cmd, &cfg.output)

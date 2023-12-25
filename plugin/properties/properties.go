@@ -39,7 +39,7 @@ func NewPropertiesCmd() *cobra.Command {
 	cfg := propsCfg{sep: "=", enc: UTF_8}
 
 	cmd := &cobra.Command{
-		Use:   "properties [flag] <file>",
+		Use:   "properties [flags] <file>",
 		Short: "Load a properties file and process it",
 		Example: heredoc.Doc(`
 			heimdall properties --get name,email .git/config"
@@ -59,6 +59,7 @@ func NewPropertiesCmd() *cobra.Command {
 	cmd.Flags().Var(&cfg.enc, "encoding", "File encoding")
 
 	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cmd.DisableFlagsInUseLine = true
 	return cmd
 }
 
