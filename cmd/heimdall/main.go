@@ -26,6 +26,7 @@ import (
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/docs"
 	"github.com/abc-inc/heimdall/internal"
+	"github.com/abc-inc/heimdall/plugin/artifactory"
 	"github.com/abc-inc/heimdall/plugin/docker"
 	"github.com/abc-inc/heimdall/plugin/echo"
 	"github.com/abc-inc/heimdall/plugin/eval"
@@ -34,6 +35,7 @@ import (
 	"github.com/abc-inc/heimdall/plugin/git"
 	"github.com/abc-inc/heimdall/plugin/github"
 	"github.com/abc-inc/heimdall/plugin/golang"
+	"github.com/abc-inc/heimdall/plugin/http"
 	"github.com/abc-inc/heimdall/plugin/java"
 	"github.com/abc-inc/heimdall/plugin/jira"
 	"github.com/abc-inc/heimdall/plugin/json"
@@ -55,7 +57,7 @@ import (
 const version = "0.0"
 
 func main() {
-	d := internal.Must(time.Parse(time.DateOnly, "2024-01-01"))
+	d := internal.Must(time.Parse(time.DateOnly, "2024-04-01"))
 	if time.Now().After(d) {
 		log.Warn().Msgf("This is an experimental build and stopped working after %s.", d.Format(time.DateOnly))
 		os.Exit(1)
@@ -74,6 +76,7 @@ func main() {
 	}
 
 	rootCmd.AddCommand(
+		artifactory.NewArtifactoryCmd(),
 		docker.NewDockerCmd(),
 		echo.NewEchoCmd(),
 		example.NewExampleCmd(),
@@ -82,6 +85,7 @@ func main() {
 		git.NewGitCmd(),
 		github.NewGitHubCmd(),
 		golang.NewGoCmd(),
+		http.NewHTTPCmd(),
 		java.NewJavaCmd(),
 		jira.NewJiraCmd(),
 		json.NewJSONCmd(),
@@ -107,6 +111,9 @@ func main() {
 
 	cobra.OnInitialize(func() { initConfig(rootCmd) })
 
+	if strings.Contains(os.Args[0], "___go_build_") {
+		os.Args = os.Args[1:]
+	}
 	exe := filepath.Base(os.Args[0])
 	if strings.HasPrefix(exe, "hd-") || strings.HasPrefix(exe, "heimdall-") {
 		parts := strings.Split(exe, "-")[1:]

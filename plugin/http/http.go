@@ -12,17 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package run
+package http
 
 import "github.com/spf13/cobra"
 
-func NewRunCmd() *cobra.Command {
+func NewHTTPCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                "run",
-		Short:              "Run a Heimdall task file",
-		Run:                func(cmd *cobra.Command, args []string) { runTask() },
-		FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
+		Use:   "http <subcommand>",
+		Short: "Various HTTP-related commands",
+		Args:  cobra.ExactArgs(0),
 	}
+
+	cmd.AddCommand(
+		NewCertificateCmd(),
+	)
 
 	return cmd
 }
