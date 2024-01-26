@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !no_atlassian && !no_jira
+
 package jira
 
 import (

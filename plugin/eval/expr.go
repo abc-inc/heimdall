@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_eval_expr
+//go:build !no_eval && !no_eval_expr
 
 package eval
 

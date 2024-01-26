@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !no_ssh
+
 package ssh
 
 import "github.com/spf13/cobra"

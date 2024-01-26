@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !no_docker
+
 package docker
 
 import (
@@ -44,7 +46,7 @@ func NewFileCmd() *cobra.Command {
 	return cmd
 }
 
-type cmd struct {
+type line struct {
 	Cmd       string   `json:"cmd,omitempty" yaml:"cmd,omitempty"`               // lowercase command name, e.g., "from"
 	SubCmd    string   `json:"sub_cmd,omitempty" yaml:"sub_cmd,omitempty"`       // ONBUILD only, holds the sub-command
 	JSON      bool     `json:"json,omitempty" yaml:"json,omitempty"`             // whether the value is written in json form
@@ -55,21 +57,21 @@ type cmd struct {
 	Value     []string `json:"value,omitempty" yaml:"value,omitempty"`           // contents of the command, e.g., "scratch"
 }
 
-func (c cmd) String() string {
-	return c.Original
+func (l line) String() string {
+	return l.Original
 }
 
-func readDockerfile(cfg dockerCfg) []cmd {
+func readDockerfile(cfg dockerCfg) []line {
 	r := internal.Must(res.Open(cfg.file))
 	defer func() { _ = r.Close() }()
 	return parseDockerfile(r)
 }
 
-func parseDockerfile(r io.Reader) (cmds []cmd) {
+func parseDockerfile(r io.Reader) (cmds []line) {
 	f := internal.Must(parser.Parse(r))
 
 	for _, child := range f.AST.Children {
-		c := cmd{
+		c := line{
 			Cmd:       child.Value,
 			Original:  child.Original,
 			StartLine: child.StartLine,

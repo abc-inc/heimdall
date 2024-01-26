@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !no_atlassian && !no_jira
+
 package jira
 
 import (
@@ -32,7 +34,6 @@ type jiraCfg struct {
 }
 
 func NewJiraCmd() *cobra.Command {
-	cfg := jiraCfg{}
 	cmd := &cobra.Command{
 		Use:   "jira <subcommand>",
 		Short: "Query Jira",
@@ -45,7 +46,6 @@ func NewJiraCmd() *cobra.Command {
 		NewVersionCmd(),
 	)
 
-	cmd.Flags().StringVarP(&cfg.baseURL, "url", "u", cfg.baseURL, "Jira base URL")
 	return cmd
 }
 
