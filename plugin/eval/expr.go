@@ -31,7 +31,11 @@ type exprEngine struct {
 }
 
 func newExprEngine() engine {
-	return &exprEngine{make(map[string]any), nil}
+	return &exprEngine{make(map[string]any), []expr.Option{
+		expr.DisableAllBuiltins(),
+		expr.EnableBuiltin("len"),
+		expr.ExperimentalPipes(),
+	}}
 }
 
 func (e *exprEngine) eval(cfg evalCfg, envMap map[string]any) (res []string, err error) {

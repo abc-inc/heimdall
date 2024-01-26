@@ -24,7 +24,7 @@ import (
 )
 
 func NewEchoCmd() *cobra.Command {
-	cfg := style.Styles{Border: "none", Align: "left", Margin: "0 0", Padding: "0 0"}
+	cfg := NewDefaultStyles()
 	cmd := &cobra.Command{
 		Use:   "echo",
 		Short: "Apply coloring, borders, spacing to text",
@@ -58,6 +58,14 @@ func NewEchoCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&cfg.Strikethrough, "strikethrough", cfg.Strikethrough, "Strikethrough text")
 	cmd.Flags().BoolVar(&cfg.Underline, "underline", cfg.Underline, "Underline text")
 	return cmd
+}
+
+func NewDefaultStyles() style.Styles {
+	return style.Styles{Border: "none", Align: "left", Margin: "0 0", Padding: "0 0"}
+}
+
+func NewBorderStyles() style.Styles {
+	return style.Styles{Border: "rounded", Padding: "0 1", BorderForeground: "7"}
 }
 
 func echo(cfg style.Styles, args ...string) error {
