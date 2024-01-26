@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !no_github
+
 package github
 
 import (
@@ -84,12 +86,21 @@ type ghCfg struct {
 	// state      string
 	secretType []string
 	resolution []string
+	// Teams
+	slug             string
+	discussionNumber int
+	commentID        int
+	groupID          int64
+	orgID            int64
+	teamID           int64
+	displayName      *string
+	role             string
 	// Output
 	console.OutCfg
 }
 
 func newGHCfg() *ghCfg {
-	direction, ecosystem, pkg, scope, severity, sort, state := "", "", "", "", "", "created", "open"
+	direction, ecosystem, pkg, scope, severity, sort, state, typ := "", "", "", "", "", "created", "open", "all"
 	return &ghCfg{
 		direction: &direction,
 		ecosystem: &ecosystem,
@@ -98,6 +109,7 @@ func newGHCfg() *ghCfg {
 		severity:  &severity,
 		sort:      &sort,
 		state:     &state,
+		typ:       typ,
 	}
 }
 
@@ -111,10 +123,12 @@ func NewGitHubCmd() *cobra.Command {
 	cmd.AddCommand(
 		NewCodeScanCmd(),
 		NewDependabotCmd(),
+		NewDepGraphCmd(),
 		NewMarkdownCmd(),
 		NewPRCmd(),
 		NewRepoCmd(),
 		NewSecretScanCmd(),
+		NewTeamsCmd(),
 	)
 
 	return cmd
@@ -249,7 +263,10 @@ func cmdName(m reflect.Method) string {
 
 	n = strings.TrimPrefix(n, "get-")
 	n = strings.TrimPrefix(n, "list-")
+	n = strings.ReplaceAll(n, "-i-d", "-id")
+	n = strings.ReplaceAll(n, "i-d-p-", "idp-")
 	n = strings.ReplaceAll(n, "s-a-r-i-f", "sarif")
+	n = strings.ReplaceAll(n, "s-b-o-m", "sbom")
 	n = strings.ReplaceAll(n, "-s-h-a1", "-sha1")
 	return n
 }
@@ -285,4 +302,11 @@ func branchOrDefault(cfg *ghCfg, svc *github.RepositoriesService) {
 	r, _, err := svc.Get(getCtx(cfg), cfg.owner, cfg.repo)
 	internal.MustNoErr(err)
 	cfg.branch = r.DefaultBranch
+}
+
+func defVal[T any](v *T) (t T) {
+	if v == nil {
+		return
+	}
+	return *v
 }

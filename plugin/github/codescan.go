@@ -27,9 +27,10 @@ import (
 )
 
 func NewCodeScanCmd() *cobra.Command {
-	var branch string
+	var branch, toolName string
 	cfg := newGHCfg()
 	cfg.branch = &branch
+	cfg.toolName = &toolName
 
 	cmd := &cobra.Command{
 		Use:   "code-scanning",
@@ -90,15 +91,15 @@ func execCodeScan(cfg *ghCfg, cmd *cobra.Command) (a any, err error) {
 		a, _, err = svc.GetAlert(getCtx(cfg), cfg.owner, cfg.repo, cfg.id)
 	case "alert-instances":
 		a, _, err = svc.ListAlertInstances(getCtx(cfg), cfg.owner, cfg.repo, cfg.id, &github.AlertInstancesListOptions{
-			Ref:         *cfg.branch,
+			Ref:         defVal(cfg.branch),
 			ListOptions: github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
 		})
 	case "alerts-for-repo":
 		a, _, err = svc.ListAlertsForRepo(getCtx(cfg), cfg.owner, cfg.repo, &github.AlertListOptions{
-			State:             *cfg.state,
-			Ref:               *cfg.branch,
-			Severity:          *cfg.severity,
-			ToolName:          *cfg.toolName,
+			State:             defVal(cfg.state),
+			Ref:               defVal(cfg.branch),
+			Severity:          defVal(cfg.severity),
+			ToolName:          defVal(cfg.toolName),
 			ListCursorOptions: github.ListCursorOptions{},
 			ListOptions:       github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
 		})

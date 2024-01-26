@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !no_github
+
 //go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v56@v56.0.0/github/repos\*.go ../../docs
 
 package github
@@ -158,9 +160,9 @@ func NewRepoCmd() *cobra.Command {
 		case "list":
 			sub.Flags().StringVar(&cfg.visibility, "visibility", cfg.visibility, "Visibility (all, public, private)")
 			sub.Flags().StringVar(&cfg.affiliation, "affiliation", cfg.affiliation, "Comma-separated list of (owner, collaborator, organization_member)")
-			sub.Flags().StringVar(&cfg.typ, "typ", cfg.typ, "Tag name for the release. This can be an existing tag or a new one.")
-			sub.Flags().StringVar(cfg.sort, "sort", *cfg.sort, "Tag name for the release. This can be an existing tag or a new one.")
-			sub.Flags().StringVar(cfg.direction, "direction", *cfg.direction, "Tag name for the release. This can be an existing tag or a new one.")
+			sub.Flags().StringVar(&cfg.typ, "type", cfg.typ, "Types of repositories you want returned (all, public, private, forks, sources, member)")
+			sub.Flags().StringVar(cfg.sort, "sort", *cfg.sort, "The property to sort the results by (created, updated, pushed, full_name)")
+			sub.Flags().StringVar(cfg.direction, "direction", *cfg.direction, `The order to sort by (default "asc" when using full_name, otherwise "desc")`)
 		case "permission-level":
 			sub.Flags().StringVar(&cfg.user, "username", cfg.user, "Handle for the GitHub user account.")
 		case "pre-receive-hook":
@@ -301,11 +303,11 @@ func execRepos(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
 		x, _, err = svc.License(getCtx(cfg), cfg.owner, cfg.repo)
 	case "list":
 		x, _, err = svc.List(getCtx(cfg), cfg.owner, &github.RepositoryListOptions{
-			Visibility:  "",
-			Affiliation: "",
-			Type:        "",
-			Sort:        "",
-			Direction:   "",
+			Visibility:  cfg.visibility,
+			Affiliation: cfg.affiliation,
+			Type:        cfg.typ,
+			Sort:        defVal(cfg.sort),
+			Direction:   defVal(cfg.direction),
 			ListOptions: github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
 		})
 	case "participation":
