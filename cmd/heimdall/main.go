@@ -27,6 +27,8 @@ import (
 	"github.com/abc-inc/heimdall/docs"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/plugin/artifactory"
+	"github.com/abc-inc/heimdall/plugin/confluence"
+	"github.com/abc-inc/heimdall/plugin/cyclonedx"
 	"github.com/abc-inc/heimdall/plugin/docker"
 	"github.com/abc-inc/heimdall/plugin/echo"
 	"github.com/abc-inc/heimdall/plugin/eval"
@@ -36,6 +38,7 @@ import (
 	"github.com/abc-inc/heimdall/plugin/github"
 	"github.com/abc-inc/heimdall/plugin/golang"
 	"github.com/abc-inc/heimdall/plugin/http"
+	"github.com/abc-inc/heimdall/plugin/interactive"
 	"github.com/abc-inc/heimdall/plugin/java"
 	"github.com/abc-inc/heimdall/plugin/jira"
 	"github.com/abc-inc/heimdall/plugin/json"
@@ -57,6 +60,7 @@ import (
 const version = "0.0"
 
 func main() {
+	console.Version = version
 	d := internal.Must(time.Parse(time.DateOnly, "2024-04-01"))
 	if time.Now().After(d) {
 		log.Warn().Msgf("This is an experimental build and stopped working after %s.", d.Format(time.DateOnly))
@@ -77,6 +81,8 @@ func main() {
 
 	rootCmd.AddCommand(
 		artifactory.NewArtifactoryCmd(),
+		confluence.NewConfluenceCmd(),
+		cyclonedx.NewCycloneDXCmd(),
 		docker.NewDockerCmd(),
 		echo.NewEchoCmd(),
 		example.NewExampleCmd(),
@@ -86,6 +92,7 @@ func main() {
 		github.NewGitHubCmd(),
 		golang.NewGoCmd(),
 		http.NewHTTPCmd(),
+		interactive.NewInteractiveCmd(),
 		java.NewJavaCmd(),
 		jira.NewJiraCmd(),
 		json.NewJSONCmd(),
@@ -185,9 +192,6 @@ func postInitCommands(cmds ...*cobra.Command) {
 func presetFlags(cmd *cobra.Command) {
 	internal.MustNoErr(viper.BindPFlags(cmd.Flags()))
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		if f.Name == "silent" {
-			fmt.Println("FLAG: ", f.Name, f.Value, viper.GetString(f.Name))
-		}
 		if viper.IsSet(f.Name) && viper.GetString(f.Name) != "" {
 			internal.MustNoErr(cmd.Flags().Set(f.Name, viper.GetString(f.Name)))
 			internal.MustOkMsgf[any](nil, cmd.Flags().Changed(f.Name), "flag %s does not exist", f.Name)
@@ -213,9 +217,9 @@ func versionCmd() *cobra.Command {
 			}
 
 			if len(rev) > 10 {
-				fmt.Printf("Heimdall version %s (Git commit: %s, Date: %s)\n", version, rev[0:10], t)
+				_, _ = console.Msg(fmt.Sprintf("Heimdall version %s (Git commit: %s, Date: %s)\n", version, rev[0:10], t))
 			} else {
-				fmt.Printf("Heimdall version %s\n", version)
+				_, _ = console.Msg(fmt.Sprintf("Heimdall version %s\n", version))
 			}
 		},
 	}

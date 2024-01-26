@@ -31,6 +31,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
+var Version string
+
 type OutCfg struct {
 	Output   string
 	Query    string
