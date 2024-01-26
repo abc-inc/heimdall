@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !no_java
+
 package java
 
 import (
+	"crypto/rsa"
 	"crypto/x509"
 	"os"
+	"reflect"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
@@ -26,6 +30,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
+
+type Entry any
 
 type keystoreCfg struct {
 	console.OutCfg
@@ -56,12 +62,16 @@ func NewKeystoreCmd() *cobra.Command {
 	return cmd
 }
 
-func listEntries(cfg keystoreCfg) (es []any) {
+func listEntries(cfg keystoreCfg) (es []Entry) {
 	ks := readKeyStore(cfg)
 	for _, a := range ks.Aliases() {
 		if ks.IsTrustedCertificateEntry(a) {
 			entry := internal.Must(ks.GetTrustedCertificateEntry(a))
 			cert := internal.Must(x509.ParseCertificate(entry.Certificate.Content))
+			if _, ok := cert.PublicKey.(*rsa.PublicKey); ok {
+				// N is a big.Int, which cannot be handled by a lot of tools like JQ, so it is set to nil.
+				cert.PublicKey = nil
+			}
 			es = append(es, entry, cert)
 		} else if ks.IsPrivateKeyEntry(a) {
 			entry := internal.Must(ks.GetPrivateKeyEntry(a, cfg.password))
@@ -81,4 +91,9 @@ func readKeyStore(cfg keystoreCfg) keystore.KeyStore {
 		log.Fatal().Err(err).Send()
 	}
 	return ks
+}
+
+func init() {
+	var e []Entry
+	console.EnableMarshalling(reflect.TypeOf(e))
 }

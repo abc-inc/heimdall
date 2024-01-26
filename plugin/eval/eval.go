@@ -12,13 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !no_eval
+
 package eval
 
 import (
 	"encoding/json"
 	"os"
 	"path"
+	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
@@ -39,13 +43,14 @@ type engine interface {
 }
 
 type evalCfg struct {
-	output  string
-	engine  string
-	expr    []string
-	files   []string
-	ignMiss bool
-	quiet   bool
-	verbose bool
+	output   string
+	engine   string
+	expr     []string
+	files    []string
+	template string
+	ignMiss  bool
+	quiet    bool
+	verbose  bool
 }
 
 type input struct {
@@ -87,6 +92,9 @@ func NewEvalCmd() *cobra.Command {
 			if _, ok := engines[cfg.engine]; !ok {
 				log.Fatal().Msgf(`cannot find engine "%s", must be one of "%s"`, cfg.engine, strings.Join(names, `", "`))
 			}
+			if t := os.Getenv("HEIMDALL_TEMPLATE"); t != "" && cfg.template != "" {
+				cfg.template = t
+			}
 
 			cfg.files = args
 			result, err := eval(cfg)
@@ -94,8 +102,21 @@ func NewEvalCmd() *cobra.Command {
 				log.Fatal().Err(err).Send()
 			}
 			if !cfg.quiet {
+				tmpl := template.Must(template.New("result").Parse(cfg.template))
 				for _, r := range result {
-					console.Fmtln(r)
+					if cfg.template != "" {
+						if i, convIntErr := strconv.Atoi(r); convIntErr == nil {
+							internal.MustNoErr(tmpl.Execute(console.Output, i))
+						} else if f, convFloatErr := strconv.ParseFloat(r, 64); convFloatErr == nil {
+							internal.MustNoErr(tmpl.Execute(console.Output, f))
+						} else if b, convBoolErr := strconv.ParseBool(r); convBoolErr == nil {
+							internal.MustNoErr(tmpl.Execute(console.Output, b))
+						} else {
+							internal.MustNoErr(tmpl.Execute(console.Output, r))
+						}
+					} else {
+						console.Fmtln(r)
+					}
 				}
 			}
 			if len(result) > 0 && result[len(result)-1] == "false" {
@@ -109,6 +130,7 @@ func NewEvalCmd() *cobra.Command {
 	cmd.Flags().StringArrayVarP(&cfg.expr, "expression", "e", cfg.expr, "Expression to evaluate against the input files. May be provided multiple times.")
 	cmd.Flags().BoolVar(&cfg.ignMiss, "ignore-missing", cfg.ignMiss, "Don't fail or report status for missing files")
 	cmd.Flags().BoolVar(&cfg.quiet, "quiet", false, "Enable quiet mode (suppress normal output)")
+	cmd.Flags().StringVar(&cfg.template, "template", cfg.template, "Output template to use (Go template syntax).")
 	cmd.Flags().BoolVarP(&cfg.verbose, "verbose", "v", false, "Enable verbose mode")
 
 	console.AddOutputFlag(cmd, &cfg.output)
@@ -147,9 +169,9 @@ func resolveFiles(fs []string) (list []input) {
 	for _, f := range fs {
 		n, post, _ := strings.Cut(f, ":")
 		log.Debug().Str("glob", n).Msg("Resolving files")
-		fs, err := zglob.Glob(n)
-		internal.MustOkMsgf(fs, err == nil, "cannot resolve any files matching glob '%s'", n)
-		for _, g := range internal.Must(fs, err) {
+		gs, err := zglob.Glob(n)
+		internal.MustOkMsgf(gs, err == nil, "cannot resolve any files matching glob '%s'", n)
+		for _, g := range internal.Must(gs, err) {
 			list = append(list, splitNamePrefixType(g+":"+post))
 		}
 	}

@@ -65,8 +65,11 @@ func (w JQWriter) Write(i interface{}) (int, error) {
 		} else if typ.Kind() == reflect.Map && canMarshal(typ.Key()) && canMarshal(typ.Elem()) {
 			b := internal.Must(json.Marshal(i))
 			r = bytes.NewReader(b)
+		} else if typ.Kind() == reflect.Map && canMarshalMap(i) {
+			b := internal.Must(json.Marshal(i))
+			r = bytes.NewReader(b)
 		} else {
-			internal.MustOkMsgf(x, false, "Cannot query json of type %s", typ.Kind())
+			internal.MustOkMsgf(x, false, "Cannot query json of type %s", reflect.ValueOf(i).Index(1).Type())
 		}
 	}
 
@@ -104,6 +107,26 @@ func canMarshal(t reflect.Type) bool {
 	return marshalType[t.String()]
 }
 
+func canMarshalMap(i interface{}) bool {
+	for it := reflect.ValueOf(i).MapRange(); it.Next(); {
+		if !canMarshal(it.Key().Type()) || !canMarshal(it.Value().Type()) {
+			return false
+		}
+	}
+	return true
+}
 func EnableMarshalling(t reflect.Type) {
 	marshalType[t.String()] = true
+}
+
+func init() {
+	builtIn := []reflect.Kind{
+		reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.String,
+	}
+
+	for _, b := range builtIn {
+		marshalType[b.String()] = true
+	}
 }

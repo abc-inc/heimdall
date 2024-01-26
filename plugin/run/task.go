@@ -1,3 +1,20 @@
+// This file contains code of Task.
+// Copyright 2024 The Heimdall authors, Andrey Nering
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//go:build !no_run
+
 package run
 
 import (
@@ -14,6 +31,7 @@ import (
 	"github.com/go-task/task/v3/interpreter"
 	"github.com/go-task/task/v3/interpreter/exprext"
 	"github.com/go-task/task/v3/taskfile"
+	"github.com/mattn/go-isatty"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/spf13/pflag"
 	"mvdan.cc/sh/v3/syntax"
@@ -66,6 +84,7 @@ func runTask() {
 		watch       bool
 		verbose     bool
 		silent      bool
+		assumeYes   bool
 		dry         bool
 		summary     bool
 		exitCode    bool
@@ -78,29 +97,32 @@ func runTask() {
 		interval    time.Duration
 	)
 
-	pflag.BoolVar(&versionFlag, "version", false, "show Task version")
-	pflag.BoolVarP(&helpFlag, "help", "h", false, "shows Task usage")
-	pflag.BoolVarP(&init, "init", "i", false, "creates a new Taskfile.yaml in the current folder")
-	pflag.BoolVarP(&list, "list", "l", false, "lists tasks with description of current Taskfile")
-	pflag.BoolVarP(&listAll, "list-all", "a", false, "lists tasks with or without a description")
-	pflag.BoolVarP(&listJson, "json", "j", false, "formats task list as json")
-	pflag.BoolVar(&status, "status", false, "exits with non-zero exit code if any of the given tasks is not up-to-date")
-	pflag.BoolVarP(&force, "force", "f", false, "forces execution even when the task is up-to-date")
-	pflag.BoolVarP(&watch, "watch", "w", false, "enables watch of the given task")
-	pflag.BoolVarP(&verbose, "verbose", "v", false, "enables verbose mode")
-	pflag.BoolVarP(&silent, "silent", "s", false, "disables echoing")
-	pflag.BoolVarP(&parallel, "parallel", "p", false, "executes tasks provided on command line in parallel")
-	pflag.BoolVarP(&dry, "dry", "n", false, "compiles and prints tasks in the order that they would be run, without executing them")
-	pflag.BoolVar(&summary, "summary", false, "show summary about a task")
-	pflag.BoolVarP(&exitCode, "exit-code", "x", false, "pass-through the exit code of the task command")
-	pflag.StringVarP(&dir, "dir", "d", "", "sets directory of execution")
-	pflag.StringVarP(&entrypoint, "taskfile", "t", "", `choose which Taskfile to run. Defaults to "Taskfile.yml"`)
-	pflag.StringVarP(&output.Name, "output", "o", "", "sets output style: [interleaved|group|prefixed]")
-	pflag.StringVar(&output.Group.Begin, "output-group-begin", "", "message template to print before a task's grouped output")
-	pflag.StringVar(&output.Group.End, "output-group-end", "", "message template to print after a task's grouped output")
-	pflag.BoolVarP(&color, "color", "c", true, "colored output. Enabled by default. Set flag to false or use NO_COLOR=1 to disable")
-	pflag.IntVarP(&concurrency, "concurrency", "C", 0, "limit number tasks to run concurrently")
-	pflag.DurationVarP(&interval, "interval", "I", 0, "interval to watch for changes")
+	if pflag.Lookup("interval") == nil {
+		// pflag.BoolVar(&versionFlag, "version", false, "show Task version")
+		pflag.BoolVarP(&helpFlag, "help", "h", false, "shows Task usage")
+		pflag.BoolVarP(&init, "init", "i", false, "creates a new Taskfile.yaml in the current folder")
+		pflag.BoolVarP(&list, "list", "l", false, "lists tasks with description of current Taskfile")
+		pflag.BoolVarP(&listAll, "list-all", "a", false, "lists tasks with or without a description")
+		pflag.BoolVarP(&listJson, "json", "j", false, "formats task list as json")
+		pflag.BoolVar(&status, "status", false, "exits with non-zero exit code if any of the given tasks is not up-to-date")
+		pflag.BoolVarP(&force, "force", "f", false, "forces execution even when the task is up-to-date")
+		pflag.BoolVarP(&watch, "watch", "w", false, "enables watch of the given task")
+		pflag.BoolVarP(&verbose, "verbose", "v", false, "enables verbose mode")
+		pflag.BoolVarP(&silent, "silent", "s", false, "disables echoing")
+		pflag.BoolVarP(&assumeYes, "yes", "y", !isatty.IsTerminal(os.Stdin.Fd()), `Assume "yes" as answer to all prompts.`)
+		pflag.BoolVarP(&parallel, "parallel", "p", false, "executes tasks provided on command line in parallel")
+		pflag.BoolVarP(&dry, "dry", "n", false, "compiles and prints tasks in the order that they would be run, without executing them")
+		pflag.BoolVar(&summary, "summary", false, "show summary about a task")
+		pflag.BoolVarP(&exitCode, "exit-code", "x", false, "pass-through the exit code of the task command")
+		pflag.StringVarP(&dir, "dir", "d", "", "sets directory of execution")
+		pflag.StringVarP(&entrypoint, "taskfile", "t", "", `choose which Taskfile to run. Defaults to "Taskfile.yml"`)
+		// pflag.StringVarP(&output.Name, "output", "o", "", "sets output style: [interleaved|group|prefixed]")
+		pflag.StringVar(&output.Group.Begin, "output-group-begin", "", "message template to print before a task's grouped output")
+		pflag.StringVar(&output.Group.End, "output-group-end", "", "message template to print after a task's grouped output")
+		pflag.BoolVarP(&color, "color", "c", true, "colored output. Enabled by default. Set flag to false or use NO_COLOR=1 to disable")
+		pflag.IntVarP(&concurrency, "concurrency", "C", 0, "limit number tasks to run concurrently")
+		pflag.DurationVarP(&interval, "interval", "I", 0, "interval to watch for changes")
+	}
 	pflag.Parse()
 
 	if versionFlag {
@@ -146,9 +168,11 @@ func runTask() {
 
 	e := task.Executor{
 		Force:       force,
+		Insecure:    true,
 		Watch:       watch,
 		Verbose:     verbose,
 		Silent:      silent,
+		AssumeYes:   assumeYes,
 		Dir:         dir,
 		Dry:         dry,
 		Entrypoint:  entrypoint,
