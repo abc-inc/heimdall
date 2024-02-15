@@ -48,6 +48,8 @@ func NewConfluenceCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
+		NewCreateCmd(),
+		NewUpdateCmd(),
 		NewSearchCmd(),
 	)
 
