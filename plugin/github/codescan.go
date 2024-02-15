@@ -22,6 +22,7 @@ import (
 	"reflect"
 
 	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/internal"
 	"github.com/google/go-github/v56/github"
 	"github.com/spf13/cobra"
 )
@@ -42,8 +43,8 @@ func NewCodeScanCmd() *cobra.Command {
 		"alert",
 		"alert-instances",
 		"alerts-for-repo",
-		"analysis",
 		"analyses-for-repo",
+		"analysis",
 		"default-setup-configuration",
 		"sarif",
 	}
@@ -66,10 +67,11 @@ func NewCodeScanCmd() *cobra.Command {
 		case "analyses-for-repo":
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
 			sub.Flags().StringVar(&cfg.sarifID, "sarif", cfg.sarifID, "SARIF ID obtained after uploading")
-		case "analysis:":
+		case "analysis":
 			addItemFlags(cfg, sub)
 		case "sarif":
 			sub.Flags().StringVar(&cfg.sarifID, "sarif", cfg.sarifID, "SARIF ID obtained after uploading")
+			internal.MustNoErr(sub.MarkFlagRequired("sarif"))
 		}
 	}
 
@@ -81,10 +83,6 @@ func execCodeScan(cfg *ghCfg, cmd *cobra.Command) (a any, err error) {
 	setHostOwnerRepo(cfg, cfg.host, cfg.owner, cfg.repo)
 	cfg.client = newClient()
 	svc := cfg.client.CodeScanning
-
-	if cmd.Flag("branch") != nil {
-		branchOrDefault(cfg, cfg.client.Repositories)
-	}
 
 	switch cmd.Name() {
 	case "alert":

@@ -129,6 +129,7 @@ func NewGitHubCmd() *cobra.Command {
 		NewRepoCmd(),
 		NewSecretScanCmd(),
 		NewTeamsCmd(),
+		NewUsersCmd(),
 	)
 
 	return cmd
@@ -198,7 +199,8 @@ func createCmds(cfg *ghCfg, svcTyp reflect.Type, inv Inv, list []string) (cmds [
 			strings.Contains(m.Name, "Key") || strings.Contains(m.Name, "Invitation") ||
 			strings.Contains(m.Name, "Page") || strings.Contains(m.Name, "Signatures") ||
 			strings.Contains(m.Name, "App") || strings.Contains(m.Name, "Autolink") || strings.Contains(m.Name, "Project") ||
-			strings.Contains(m.Name, "Context") || strings.Contains(m.Name, "Traffic") {
+			strings.Contains(m.Name, "Context") || strings.Contains(m.Name, "Traffic") ||
+			(svcTyp == reflect.TypeOf(&github.UsersService{}) && m.Name != "ListAll" && m.Name != "Get") {
 
 			continue
 		}
@@ -222,7 +224,7 @@ func createCmds(cfg *ghCfg, svcTyp reflect.Type, inv Inv, list []string) (cmds [
 			if last := fTyp.In(fTyp.NumIn() - 1); last.AssignableTo(reflect.TypeOf(&github.ListOptions{})) {
 				kind = "list"
 			} else if last.Kind() == reflect.Ptr && last.Elem().Kind() == reflect.Struct {
-				if lo, ok := last.Elem().FieldByName("ListOptions"); ok && lo.Type.AssignableTo(reflect.TypeOf(github.ListOptions{})) {
+				if lo, okList := last.Elem().FieldByName("ListOptions"); okList && lo.Type.AssignableTo(reflect.TypeOf(github.ListOptions{})) {
 					kind = "list"
 				}
 			}
@@ -288,7 +290,7 @@ func newClient() *github.Client {
 	if strings.HasPrefix(url, "https://api.github.com") {
 		return github.NewClient(httpClient)
 	}
-	return internal.Must(github.NewClient(httpClient).WithEnterpriseURLs(url+"/v3/", url+"/uploads/"))
+	return internal.Must(github.NewClient(httpClient).WithEnterpriseURLs(url, strings.TrimSuffix(url, "/api/v3")))
 }
 
 func getCtx(_ *ghCfg) context.Context {

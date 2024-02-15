@@ -37,7 +37,7 @@ func NewTeamsCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "teams",
-		Short: "Handles communication with the teams related methods.",
+		Short: "Handles communication with the team related methods.",
 		Example: heredoc.Doc(`
 			heimdall github teams user-teams
 		`),
@@ -179,5 +179,5 @@ func execTeams(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
 	case "user-teams":
 		x, _, err = svc.ListUserTeams(context.Background(), &github.ListOptions{Page: cfg.page, PerPage: cfg.perPage})
 	}
-	return x, err
+	return
 }
