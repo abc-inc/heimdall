@@ -143,7 +143,7 @@ func eval(cfg evalCfg) ([]string, error) {
 
 	envMap := make(map[string]any)
 	for _, f := range fs {
-		if cfg.ignMiss {
+		if cfg.ignMiss && f.file != "-" {
 			if fi, err := os.Stat(f.file); err != nil || !fi.Mode().IsRegular() {
 				continue
 			}
@@ -168,6 +168,10 @@ func eval(cfg evalCfg) ([]string, error) {
 func resolveFiles(fs []string) (list []input) {
 	for _, f := range fs {
 		n, post, _ := strings.Cut(f, ":")
+		if n == "-" {
+			list = append(list, splitNamePrefixType(f))
+			continue
+		}
 		log.Debug().Str("glob", n).Msg("Resolving files")
 		gs, err := zglob.Glob(n)
 		internal.MustOkMsgf(gs, err == nil, "cannot resolve any files matching glob '%s'", n)

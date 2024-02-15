@@ -18,6 +18,7 @@ package artifactory
 
 import (
 	"os"
+	"strings"
 
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/jfrog/jfrog-client-go/artifactory"
@@ -50,7 +51,7 @@ func newRtManager() artifactory.ArtifactoryServicesManager {
 	internal.MustOkMsgf(tok, ok, "environment variable '%s' must be set", "ARTIFACTORY_TOKEN")
 
 	rtDetails := auth.NewArtifactoryDetails()
-	rtDetails.SetUrl(url)
+	rtDetails.SetUrl(strings.TrimSuffix(url, "/") + "/")
 	rtDetails.SetAccessToken(tok)
 
 	svcCfg := internal.Must(config.NewConfigBuilder().SetServiceDetails(rtDetails).Build())

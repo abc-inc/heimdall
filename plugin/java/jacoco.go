@@ -50,7 +50,7 @@ type CovRec struct {
 
 type jaCoCoCfg struct {
 	console.OutCfg
-	file    string
+	files   []string
 	exclude string
 	summary bool
 }
@@ -58,13 +58,14 @@ type jaCoCoCfg struct {
 func NewJaCoCoCmd() *cobra.Command {
 	cfg := jaCoCoCfg{}
 	cmd := &cobra.Command{
-		Use:   "jacoco",
+		Use:   "jacoco [flags] <file>...",
 		Short: "Parse and aggregate Java code coverage reports",
 		Example: heredoc.Doc(`
-			heimdall java jacoco -f jacoco.csv --summary --output text --jq ".line_covered / (.line_covered + .line_missed)"
+			heimdall java jacoco jacoco.csv --summary --output text --jq ".line_covered / (.line_covered + .line_missed)"
 		`),
-		Args: cobra.ExactArgs(0),
+		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			cfg.files = args
 			printJaCoCo(cfg)
 		},
 	}
@@ -72,9 +73,7 @@ func NewJaCoCoCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&cfg.summary, "summary", "s", false, "Aggregate the report")
 	cmd.Flags().StringVarP(&cfg.exclude, "exclude", "x", "generated", "Packages to exclude")
 
-	console.AddFileFlag(cmd, &cfg.file, "Path to the JaCoCo CSV file or URL")
 	console.AddOutputFlags(cmd, &cfg.OutCfg)
-	internal.MustNoErr(cmd.MarkFlagFilename("file", "csv"))
 	return cmd
 }
 
@@ -95,14 +94,17 @@ func processJaCoCo(cfg jaCoCoCfg) (crs []CovRec) {
 		}
 	}
 
-	for _, p := range strings.Split(cfg.file, ":") {
+	for _, p := range cfg.files {
+		if res.IsURL(p) {
+			crs = append(crs, loadJaCoCoCSV(p, test)...)
+			continue
+		}
 		for _, f := range internal.Must(filepath.Glob(p)) {
-			c := jaCoCoCfg{file: f, exclude: cfg.exclude, summary: cfg.summary}
-			crs = append(crs, loadJaCoCoCSV(c.file, test)...)
+			crs = append(crs, loadJaCoCoCSV(f, test)...)
 		}
 	}
 	if len(crs) == 0 {
-		log.Fatal().Str("file", cfg.file).Msg("Cannot load JaCoCo report or file does not contain any matching lines")
+		log.Fatal().Strs("files", cfg.files).Msg("Cannot load JaCoCo report or files do not contain any matching lines")
 	}
 
 	if cfg.summary {

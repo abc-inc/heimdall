@@ -36,7 +36,7 @@ type downloadCfg struct {
 func NewDownloadCmd() *cobra.Command {
 	cfg := downloadCfg{}
 	cmd := &cobra.Command{
-		Use:   "download <subcommand>",
+		Use:   "download",
 		Short: "Download files from Artifactory",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -47,7 +47,9 @@ func NewDownloadCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&cfg.noFlat, "no-flat", cfg.noFlat, "Do not flatten the target directory")
 	cmd.Flags().StringVarP(&cfg.pattern, "pattern", "p", cfg.pattern, "Download only assets that match a glob pattern")
 	cmd.Flags().StringVarP(&cfg.target, "target", "t", cfg.target, "Target path")
+
 	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	internal.MustNoErr(cmd.MarkFlagRequired("pattern"))
 	return cmd
 }
 

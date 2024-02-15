@@ -36,7 +36,7 @@ type listCfg struct {
 func NewListCmd() *cobra.Command {
 	cfg := listCfg{}
 	cmd := &cobra.Command{
-		Use:   "list <subcommand>",
+		Use:   "list",
 		Short: "List artifacts in Artifactory",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
