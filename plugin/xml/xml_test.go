@@ -1,4 +1,4 @@
-// Copyright 2023 The Heimdall authors
+// Copyright 2024 The Heimdall authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_java
-
-package java
+package xml_test
 
 import (
 	"path/filepath"
 	"testing"
 
+	"github.com/abc-inc/heimdall/plugin/xml"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/stretchr/testify/require"
 )
 
-func TestProcessJaCoCo(t *testing.T) {
-	cfg := jaCoCoCfg{files: []string{filepath.Join(res.GetRootDir(), "testdata", "jacoco.csv")}, summary: false}
-
-	crs := processJaCoCo(cfg)
-	require.Equal(t, 299, len(crs))
-
-	tot := aggregateJaCoCo(crs...)
-	require.Less(t, 0.94, float64(tot.LineCov)/float64(tot.LineCov+tot.LineMis))
+func TestNewXMLCmd(t *testing.T) {
+	got := res.Run(`.["web-app"]["-version"]`,
+		xml.NewXMLCmd(), []string{filepath.Join(res.GetRootDir(), "testdata", "web.xml")})
+	require.Equal(t, "3.1", got)
 }

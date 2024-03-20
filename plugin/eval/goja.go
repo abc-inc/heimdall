@@ -34,7 +34,8 @@ func newGojaEngine() engine {
 func (e *gojaEngine) eval(cfg evalCfg, envMap map[string]any) (res []string, err error) {
 	internal.MustNoErr(e.addFunc(envMap))
 	for _, str := range cfg.expr {
-		v, err := e.vm.RunString(str)
+		var v goja.Value
+		v, err = e.vm.RunString(str)
 		if err != nil {
 			return res, err
 		}

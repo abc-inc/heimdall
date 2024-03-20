@@ -14,18 +14,22 @@
 
 //go:build !no_golang
 
-package golang
+package golang_test
 
 import (
 	"path/filepath"
 	"testing"
 
+	"github.com/abc-inc/heimdall/internal"
+	"github.com/abc-inc/heimdall/plugin/golang"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/stretchr/testify/require"
 )
 
 func TestReadMod(t *testing.T) {
-	m := readMod(modCfg{file: filepath.Join(res.GetRootDir(), "go.mod")})
-	require.Equal(t, "github.com/abc-inc/heimdall",
-		m["Module"].(map[string]any)["Mod"].(map[string]any)["Path"])
+	cmd := golang.NewModCmd()
+	internal.MustNoErr(cmd.Flags().Set("file", filepath.Join(res.GetRootDir(), "go.mod")))
+	got := res.Run(`.Module.Mod.Path`,
+		cmd, []string{"-f", filepath.Join(res.GetRootDir(), "go.mod")})
+	require.Equal(t, "github.com/abc-inc/heimdall", got)
 }

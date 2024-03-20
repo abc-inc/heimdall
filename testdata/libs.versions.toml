@@ -1,0 +1,12 @@
+[versions]
+pi = '3.14'
+
+[libraries]
+junit = { module = 'junit:junit', version = '4.13.2' }
+spring-aop = { module = 'org.springframework:spring-aop', version = '5.3.22' }
+spring-webmvc = { module = 'org.springframework:spring-webmvc', version = '5.3.22' }
+
+[bundles]
+spring = ['spring-aop', 'spring-webmvc']
+
+[plugins]
