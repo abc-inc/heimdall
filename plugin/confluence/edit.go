@@ -29,17 +29,16 @@ import (
 
 type confluenceUpdateCfg struct {
 	confluenceCfg
-	cql     string
-	expand  string
-	title   string
-	content string
+	cql    string
+	expand string
+	file   string
+	title  string
 }
 
 func NewUpdateCmd() *cobra.Command {
-	cfg := confluenceUpdateCfg{confluenceCfg: confluenceCfg{
-		baseURL: os.Getenv("CONFLUENCE_API_URL"),
-		timeout: 30 * time.Second},
-		expand: "content.ancestors,content.body.storage,content.space,content.version",
+	cfg := confluenceUpdateCfg{
+		confluenceCfg: confluenceCfg{baseURL: os.Getenv("CONFLUENCE_API_URL"), timeout: 30 * time.Second},
+		expand:        "content.ancestors,content.body.storage,content.space,content.version",
 	}
 
 	cmd := &cobra.Command{
@@ -58,7 +57,6 @@ func NewUpdateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&cfg.expand, "expand", cfg.expand, "Expand specific entities in the returned list")
 	cmd.Flags().StringVar(&cfg.cql, "filter", cfg.cql, "CQL query for searching")
-	cmd.Flags().StringVar(&cfg.content, "content", cfg.content, "Content of the page")
 	cmd.Flags().StringVar(&cfg.title, "title", cfg.title, "Title of the page")
 	addCommonFlags(cmd, &cfg.confluenceCfg)
 
@@ -95,7 +93,7 @@ func update(cfg confluenceUpdateCfg) *goconfluence.Content {
 		Ancestors: p.Content.Ancestors,
 		Body: goconfluence.Body{
 			Storage: goconfluence.Storage{
-				Value:          cfg.content,
+				Value:          readContent(cfg.file),
 				Representation: "storage",
 			},
 		},
