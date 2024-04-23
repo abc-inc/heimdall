@@ -22,6 +22,7 @@ import (
 
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	goconfluence "github.com/virtomize/confluence-go-api"
 )
@@ -52,6 +53,9 @@ func NewSearchCmd() *cobra.Command {
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			if zerolog.GlobalLevel() == zerolog.TraceLevel || zerolog.GlobalLevel() == zerolog.DebugLevel {
+				goconfluence.SetDebug(true)
+			}
 			s := search(cfg)
 			if cfg.limit == 1 && len(s.Results) == 1 {
 				console.Fmtln(s.Results[0])

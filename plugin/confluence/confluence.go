@@ -18,9 +18,13 @@ package confluence
 
 import (
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/internal"
+	"github.com/abc-inc/heimdall/res"
 	"github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"
 	goconfluence "github.com/virtomize/confluence-go-api"
@@ -68,4 +72,12 @@ func addCommonFlags(cmd *cobra.Command, cfg *confluenceCfg) {
 	cmd.Flags().DurationVarP(&cfg.timeout, "timeout", "T", cfg.timeout, "Set the network timeout in seconds")
 	cmd.Flags().StringVarP(&cfg.baseURL, "url", "u", cfg.baseURL, "Define the Confluence base URL")
 	cmd.Flags().StringVar(&cfg.token, "token", "", "Set the Confluence access token to use")
+}
+
+func readContent(name string) string {
+	f := internal.Must(res.Open(name))
+	defer func() { _ = f.Close() }()
+	b := strings.Builder{}
+	_ = internal.Must(io.Copy(&b, f))
+	return b.String()
 }

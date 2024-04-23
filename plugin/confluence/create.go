@@ -23,40 +23,42 @@ import (
 
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	goconfluence "github.com/virtomize/confluence-go-api"
 )
 
 func NewCreateCmd() *cobra.Command {
-	cfg := confluenceUpdateCfg{confluenceCfg: confluenceCfg{
-		baseURL: os.Getenv("CONFLUENCE_API_URL"),
-		timeout: 30 * time.Second},
-		expand: "content.ancestors,content.body.storage,content.space",
+	cfg := confluenceUpdateCfg{
+		confluenceCfg: confluenceCfg{baseURL: os.Getenv("CONFLUENCE_API_URL"), timeout: 30 * time.Second},
+		expand:        "content.ancestors,content.body.storage,content.space",
 	}
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create [flags] <file>",
 		Short: "Create a Confluence page",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if cfg.token == "" {
 				cfg.token = os.Getenv("CONFLUENCE_TOKEN")
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			if zerolog.GlobalLevel() == zerolog.TraceLevel || zerolog.GlobalLevel() == zerolog.DebugLevel {
+				goconfluence.SetDebug(true)
+			}
+			cfg.file = args[0]
 			console.Fmtln(create(cfg))
 		},
 	}
 
 	cmd.Flags().StringVar(&cfg.expand, "expand", cfg.expand, "Expand specific entities in the returned list")
 	cmd.Flags().StringVar(&cfg.cql, "filter", cfg.cql, "CQL query for searching")
-	cmd.Flags().StringVar(&cfg.content, "content", cfg.content, "Content of the page")
 	cmd.Flags().StringVar(&cfg.title, "title", cfg.title, "Title of the page")
 	addCommonFlags(cmd, &cfg.confluenceCfg)
 
 	console.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
-	internal.MustNoErr(cmd.MarkFlagRequired("content"))
 	internal.MustNoErr(cmd.MarkFlagRequired("title"))
 	return cmd
 }
@@ -80,10 +82,10 @@ func create(cfg confluenceUpdateCfg) *goconfluence.Content {
 	data := &goconfluence.Content{
 		Type:      "page",
 		Title:     cfg.title,
-		Ancestors: p.Content.Ancestors,
+		Ancestors: []goconfluence.Ancestor{{p.Content.ID}},
 		Body: goconfluence.Body{
 			Storage: goconfluence.Storage{
-				Value:          cfg.content,
+				Value:          readContent(cfg.file),
 				Representation: "storage",
 			},
 		},
