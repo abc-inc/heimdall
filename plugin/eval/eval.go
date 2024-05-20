@@ -92,7 +92,10 @@ func NewEvalCmd() *cobra.Command {
 			if _, ok := engines[cfg.engine]; !ok {
 				log.Fatal().Msgf(`cannot find engine "%s", must be one of "%s"`, cfg.engine, strings.Join(names, `", "`))
 			}
-			if t := os.Getenv("HEIMDALL_TEMPLATE"); t != "" && cfg.template != "" {
+			if t := os.Getenv("HEIMDALL_TEMPLATE_FILE"); t != "" && cfg.template == "" {
+				internal.MustNoErr(os.Setenv("HEIMDALL_TEMPLATE", string(internal.Must(os.ReadFile(t)))))
+			}
+			if t := os.Getenv("HEIMDALL_TEMPLATE"); t != "" && cfg.template == "" {
 				cfg.template = t
 			}
 

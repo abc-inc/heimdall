@@ -37,6 +37,7 @@ import (
 	"github.com/abc-inc/heimdall/plugin/git"
 	"github.com/abc-inc/heimdall/plugin/github"
 	"github.com/abc-inc/heimdall/plugin/golang"
+	"github.com/abc-inc/heimdall/plugin/html"
 	"github.com/abc-inc/heimdall/plugin/http"
 	"github.com/abc-inc/heimdall/plugin/interactive"
 	"github.com/abc-inc/heimdall/plugin/java"
@@ -61,7 +62,7 @@ const version = "0.0"
 
 func main() {
 	console.Version = version
-	d := internal.Must(time.Parse(time.DateOnly, "2024-04-01"))
+	d := internal.Must(time.Parse(time.DateOnly, "2024-12-01"))
 	if time.Now().After(d) {
 		log.Warn().Msgf("This is an experimental build and stopped working after %s.", d.Format(time.DateOnly))
 		os.Exit(1)
@@ -91,6 +92,7 @@ func main() {
 		git.NewGitCmd(),
 		github.NewGitHubCmd(),
 		golang.NewGoCmd(),
+		html.NewHTMLCmd(),
 		http.NewHTTPCmd(),
 		interactive.NewInteractiveCmd(),
 		java.NewJavaCmd(),
