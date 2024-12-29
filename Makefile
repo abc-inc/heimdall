@@ -41,6 +41,7 @@ test:
 	@mkdir -p "$(tmpdir)/reports"
 	go test $(GOFLAGS) -ldflags "$(LDFLAGS)" -coverprofile "$(tmpdir)/reports/coverage.out" ./...
 	go tool cover -html "$(tmpdir)/reports/coverage.out" -o "$(tmpdir)/reports/coverage.html"
+	go tool cover -func "$(tmpdir)/reports/coverage.out" -o "$(tmpdir)/reports/cov.txt"
 
 uninstall:
 	rm -fv "$(bindir)/$(notdir $(CURDIR))"
