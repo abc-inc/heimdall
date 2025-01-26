@@ -22,14 +22,14 @@ import (
 
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/plugin/golang"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestReadMod(t *testing.T) {
 	cmd := golang.NewModCmd()
-	internal.MustNoErr(cmd.Flags().Set("file", filepath.Join(res.GetRootDir(), "go.mod")))
-	got := res.Run(`.Module.Mod.Path`,
-		cmd, []string{"-f", filepath.Join(res.GetRootDir(), "go.mod")})
+	internal.MustNoErr(cmd.Flags().Set("file", filepath.Join(test.GetRootDir(), "go.mod")))
+	got := test.Run(`.Module.Mod.Path`,
+		cmd, []string{"-f", filepath.Join(test.GetRootDir(), "go.mod")})
 	require.Equal(t, "github.com/abc-inc/heimdall", got)
 }

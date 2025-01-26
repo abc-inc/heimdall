@@ -1,4 +1,4 @@
-// Copyright 2023 The Heimdall authors
+// Copyright 2024 The Heimdall authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,38 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_yaml
+//go:build !no_parse && !no_toml
 
-package yaml
+package parse
 
 import (
+	"github.com/BurntSushi/toml"
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
-	"gopkg.in/yaml.v3"
 )
 
-type yamlCfg struct {
+type tomlCfg struct {
 	console.OutCfg
 }
 
-func NewYAMLCmd() *cobra.Command {
-	cfg := yamlCfg{}
+func NewTOMLCmd() *cobra.Command {
+	cfg := tomlCfg{}
 
 	cmd := &cobra.Command{
-		Use:   "yaml [flags] <file>...",
-		Short: "Load YAML files and process them",
+		Use:     "toml [flags] <file>...",
+		Short:   "Load TOML files and process them",
+		GroupID: console.FileGroup,
 		Example: heredoc.Doc(`
-			heimdall yaml --query 'to_number("web-app"."-version")' config.yaml"
+			heimdall toml --query 'libraries.junit.version' gradle/libs.versions.toml"
 		`),
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			m := make(map[string]any)
 			for _, f := range args {
-				maps.Copy(m, processYAML(f))
+				maps.Copy(m, ProcessTOML(f))
 			}
 			console.Fmtln(m)
 		},
@@ -54,9 +55,9 @@ func NewYAMLCmd() *cobra.Command {
 	return cmd
 }
 
-func processYAML(name string) (m map[string]any) {
+func ProcessTOML(name string) (m map[string]any) {
 	r := internal.Must(res.Open(name))
 	defer func() { _ = r.Close() }()
-	internal.MustNoErr(yaml.NewDecoder(r).Decode(&m))
+	internal.Must(toml.NewDecoder(r).Decode(&m))
 	return m
 }

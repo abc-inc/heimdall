@@ -20,7 +20,7 @@ import (
 
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/plugin/eval"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
@@ -28,24 +28,15 @@ func TestNewEvalCmdExpr(t *testing.T) {
 	cmd := eval.NewEvalCmd()
 	internal.MustNoErr(cmd.Flags().Set("engine", "expr"))
 	internal.MustNoErr(cmd.Flags().Set("expression", `g.distributionBase`))
-	got := res.Run(``, cmd, []string{filepath.Join(res.GetRootDir(), "testdata", "gradle", "wrapper", "gradle-wrapper.properties:g")})
+	got := test.Run(``, cmd, []string{filepath.Join(test.GetRootDir(), "testdata", "gradle", "wrapper", "gradle-wrapper.properties:g")})
 	require.Equal(t, "GRADLE_USER_HOME", got)
-}
-
-func TestNewEvalCmdExprWithTemplate(t *testing.T) {
-	cmd := eval.NewEvalCmd()
-	internal.MustNoErr(cmd.Flags().Set("engine", "expr"))
-	internal.MustNoErr(cmd.Flags().Set("expression", `g.distributionBase`))
-	internal.MustNoErr(cmd.Flags().Set("template", `{{len .}}`))
-	got := res.Run(``, cmd, []string{filepath.Join(res.GetRootDir(), "testdata", "gradle", "wrapper", "gradle-wrapper.properties:g")})
-	require.Equal(t, "16", got)
 }
 
 func TestNewEvalCmdJavaScript(t *testing.T) {
 	cmd := eval.NewEvalCmd()
 	internal.MustNoErr(cmd.Flags().Set("engine", "javascript"))
 	internal.MustNoErr(cmd.Flags().Set("expression", `upper('a ')+([]+{})`))
-	got := res.Run(``, cmd, []string{})
+	got := test.Run(``, cmd, []string{})
 	require.Equal(t, "A [object Object]", got)
 }
 
@@ -53,6 +44,6 @@ func TestNewEvalCmdTemplate(t *testing.T) {
 	cmd := eval.NewEvalCmd()
 	internal.MustNoErr(cmd.Flags().Set("engine", "template"))
 	internal.MustNoErr(cmd.Flags().Set("expression", `{{upper "a"}}`))
-	got := res.Run(``, cmd, []string{})
+	got := test.Run(``, cmd, []string{})
 	require.Equal(t, "A", got)
 }

@@ -20,12 +20,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestReadJUnit(t *testing.T) {
-	f := filepath.Join(res.GetRootDir(), "testdata", "TEST-com.example.project.CalculatorTests.xml")
+	f := filepath.Join(test.GetRootDir(), "testdata", "TEST-com.example.project.CalculatorTests.xml")
 	cfg := junitCfg{file: f, summary: true, withOutput: false}
 
 	ss := readJUnit(cfg)

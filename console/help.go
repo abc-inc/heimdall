@@ -143,8 +143,24 @@ func RootHelpFunc(cmd *cobra.Command, _ []string) {
 		es = append(es, helpEntry{"INHERITED FLAGS", dedent(usgs)})
 	}
 	if cmd.Example != "" {
-		es = append(es, helpEntry{"EXAMPLES", cmd.Example})
+		es = append(es, helpEntry{"EXAMPLES", dedent(cmd.Example)})
 	}
+
+	for p := cmd; p != nil; p = p.Parent() {
+		if p.Annotations["help:environment"] != "" {
+			e := helpEntry{"ENVIRONMENT VARIABLES", ""}
+			for _, l := range strings.Split(p.Annotations["help:environment"], "\n") {
+				if l != "" {
+					n, d, _ := strings.Cut(l, "  ")
+					e.Body += "  " + rpad(n, nPad) + "  " + strings.TrimSpace(d) + "\n"
+				}
+			}
+			e.Body = dedent(e.Body)
+			es = append(es, e)
+			break
+		}
+	}
+
 	es = append(es, helpEntry{"LEARN MORE", `
 Use 'heimdall <command> [<subcommand>] --help' for more information about a command.`})
 	if _, ok := cmd.Annotations["help:feedback"]; ok {

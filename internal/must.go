@@ -17,6 +17,7 @@ package internal
 import (
 	"reflect"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -33,6 +34,9 @@ func Must[T any](a T, err error) T {
 // execution is not meaningful.
 func MustNoErr(err error) {
 	if err != nil {
+		if zerolog.GlobalLevel() == zerolog.TraceLevel {
+			panic(err)
+		}
 		log.Fatal().Err(err).Str("type", reflect.TypeOf(err).String()).Send()
 	}
 }

@@ -46,9 +46,10 @@ import (
 
 func NewInteractiveCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "interactive [<args>]",
-		Short: "Interactive CLI builder",
-		Args:  cobra.MaximumNArgs(100),
+		Use:     "interactive [<args>]",
+		Short:   "Interactive CLI builder",
+		GroupID: console.HeimdallGroup,
+		Args:    cobra.MaximumNArgs(100),
 		Run: func(cmd *cobra.Command, args []string) {
 			draw(cmd.Root(), args...)
 		},
@@ -59,7 +60,7 @@ func NewInteractiveCmd() *cobra.Command {
 
 const argsLabel = "Arguments"
 
-var outputs = []string{"csv", "json", "jsonc", "table", "text", "tsv", "yaml", "yamlc"}
+var outputs = []string{"csv", "json", "table", "text", "tsv", "yaml"}
 var subCmd *cobra.Command
 var form *tview.Form
 var docs *tview.TextView

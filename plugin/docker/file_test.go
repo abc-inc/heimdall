@@ -21,12 +21,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestParseDockerfile(t *testing.T) {
-	cmds := readDockerfile(dockerCfg{file: filepath.Join(res.GetRootDir(), "testdata", "Dockerfile")})
+	cmds := readDockerfile(dockerCfg{file: filepath.Join(test.GetRootDir(), "testdata", "Dockerfile")})
 	require.Equal(t, 9, len(cmds))
 	require.Equal(t, "FROM", cmds[0].Cmd)
 	require.True(t, strings.HasSuffix(cmds[1].Value[0], "rm -rf /var/lib/apt/lists/*"))

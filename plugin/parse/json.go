@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_json
+//go:build !no_parse && !no_json
 
-package json
+package parse
 
 import (
 	"encoding/json"
+	"io"
 	"maps"
+	"path/filepath"
 	"reflect"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -37,16 +38,18 @@ func NewJSONCmd() *cobra.Command {
 	cfg := jsonCfg{}
 
 	cmd := &cobra.Command{
-		Use:   "json [flags] <file>...",
-		Short: "Load JSON files and process them",
+		Use:     "json [flags] <file>...",
+		Short:   "Load JSON files and process them",
+		GroupID: console.FileGroup,
 		Example: heredoc.Doc(`
-			heimdall json --query 'sys_id' app_svc.json"
 		`),
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			m := make(map[string]any)
 			for _, f := range args {
-				maps.Copy(m, processJSON(f))
+				v, err := ReadJSON(internal.Must(res.Open(f)))
+				internal.MustNoErr(err)
+				maps.Copy(m, toMap(v, filepath.Base(f)))
 			}
 			console.Fmtln(m)
 		},
@@ -57,22 +60,35 @@ func NewJSONCmd() *cobra.Command {
 	return cmd
 }
 
-func processJSON(f string) map[string]any {
-	return ReadJSON(f)
+func ReadJSON(r io.Reader) (m any, err error) {
+	if c, ok := r.(io.Closer); ok {
+		defer func() { _ = c.Close() }()
+	}
+	err = json.NewDecoder(r).Decode(&m)
+	return
 }
 
-func ReadJSON(name string) (m map[string]any) {
-	var in any
+func ReadJSONMap(name string) (m map[string]any) {
 	r := internal.Must(res.Open(name))
 	defer func() { _ = r.Close() }()
-	internal.MustNoErr(json.NewDecoder(r).Decode(&in))
-	switch k := reflect.TypeOf(in).Kind(); k {
-	case reflect.Map:
-		return in.(map[string]any)
-	case reflect.Array, reflect.Slice:
-		return map[string]any{"data": in}
-	default:
-		log.Fatal().Stringer("kind", k).Msg("cannot unmarshall data")
-	}
+	internal.MustNoErr(json.NewDecoder(r).Decode(&m))
 	return
+}
+
+func toMap(a any, defKey string) map[string]any {
+	if m, ok := a.(map[string]any); ok {
+		return m
+	}
+	return map[string]any{defKey: a}
+}
+
+func toAnyMap(a any, defKey string) any {
+	if reflect.TypeOf(a).Kind() == reflect.Map {
+		return a
+	}
+	return map[string]any{defKey: a}
+}
+
+func init() {
+	Decoders["json"] = ReadJSON
 }

@@ -17,48 +17,142 @@
 package html
 
 import (
+	"strings"
+
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
 type htmlCfg struct {
-	file     string
-	selector string
+	file string
+	add  []string
 }
 
 func NewHTMLCmd() *cobra.Command {
 	cfg := htmlCfg{}
 
 	cmd := &cobra.Command{
-		Use:   "html [flags] <file>",
-		Short: "Load HTML files and process them",
+		Use:     "html [flags] <file>",
+		Short:   "Load HTML files and process them",
+		GroupID: console.FileGroup,
 		Example: heredoc.Doc(`
 			heimdall html --query 'h1' index.html
 		`),
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MinimumNArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg.file = args[0]
-			_ = internal.Must(console.Msg(processHTML(cfg)))
+			_ = internal.Must(console.Msg(processHTML(cfg, cmd, args)))
 		},
 	}
 
-	cmd.DisableFlagsInUseLine = true
-	cmd.Flags().StringVar(&cfg.selector, "query", cfg.selector, "CSS selector to filter the HTML")
+	cmd.Flags().StringSlice("add", []string{}, "")
+	cmd.Flags().StringSlice("add-class", []string{}, "")
+	cmd.Flags().StringSlice("after-html", []string{}, "")
+	cmd.Flags().StringSlice("append-html", []string{}, "")
+	cmd.Flags().StringSlice("before-html", []string{}, "")
+	cmd.Flags().StringSlice("prepend-html", []string{}, "")
+	cmd.Flags().BoolSlice("remove", []bool{}, "")
+	cmd.Flags().StringSlice("remove-attr", []string{}, "")
+	cmd.Flags().StringSlice("remove-class", []string{}, "")
+	cmd.Flags().StringSlice("replace-with-html", []string{}, "")
+	cmd.Flags().StringSlice("set-html", []string{}, "")
+	cmd.Flags().StringSlice("set-text", []string{}, "")
+	cmd.Flags().BoolSlice("text", []bool{}, "")
+	cmd.Flags().StringSlice("set-attr", []string{}, "")
+	cmd.Flags().StringSlice("not", []string{}, "")
+	cmd.Flags().StringSlice("find", []string{}, "")
+	cmd.Flags().StringSlice("filter", []string{}, "")
 
-	internal.MustNoErr(cmd.MarkFlagRequired("query"))
+	cmd.DisableFlagsInUseLine = true
+	cmd.DisableFlagParsing = true
 	return cmd
 }
 
-func processHTML(cfg htmlCfg) string {
-	h := readHTML(cfg.file)
-	if cfg.selector != "" {
-		return internal.Must(h.Find(cfg.selector).Html())
+func processHTML(cfg htmlCfg, cmd *cobra.Command, args []string) string {
+	internal.MustNoErr(cmd.ParseFlags(args))
+	doc := readHTML(cfg.file)
+	sel := doc.Selection
+	f, v := "", ""
+	for _, arg := range args {
+		switch ret := handle(sel, f, v).(type) {
+		case *goquery.Selection:
+			sel = ret
+		case string:
+			return ret
+		}
+
+		if strings.HasPrefix(arg, "--") {
+			f, v = strings.TrimPrefix(arg, "--"), ""
+		} else {
+			v = arg
+		}
 	}
-	return internal.Must(h.Html())
+
+	switch ret := handle(sel, f, v).(type) {
+	case *goquery.Selection:
+		sel = ret
+	case string:
+		return ret
+	}
+
+	return internal.Must(sel.Html())
+}
+
+func handle(sel *goquery.Selection, f, v string) any {
+	if v == "" && f != "html" && f != "remove" && f != "text" {
+		return sel
+	}
+
+	switch f {
+	case "":
+		return sel
+	case "add":
+		return sel.Add(v)
+	case "add-class":
+		return sel.AddClass(v)
+	case "after-html":
+		return sel.AfterHtml(v)
+	case "append-html":
+		return sel.AppendHtml(v)
+	case "before-html":
+		return sel.BeforeHtml(v)
+	case "html":
+		return internal.Must(sel.Html())
+	case "prepend-html":
+		return sel.PrependHtml(v)
+	case "remove":
+		return sel.Remove()
+	case "remove-attr":
+		return sel.RemoveAttr(v)
+	case "remove-class":
+		return sel.RemoveClass(v)
+	case "replace-with-html":
+		return sel.ReplaceWithHtml(v)
+	case "set-html":
+		return sel.SetHtml(v)
+	case "set-text":
+		return sel.SetText(v)
+	case "text":
+		return sel.Text()
+	case "set-attr":
+		key, val, ok := strings.Cut(v, "=")
+		internal.MustOkMsgf("", ok, "invalid key-value pair: %s", v)
+		return sel.SetAttr(key, val)
+	case "not":
+		return sel.Not(v)
+	case "find":
+		return sel.Find(v)
+	case "filter":
+		return sel.Filter(v)
+	default:
+		log.Fatal().Str("operation", f).Msg("unknown operation")
+	}
+	return sel
 }
 
 func readHTML(name string) *goquery.Document {

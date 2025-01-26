@@ -34,15 +34,13 @@ generate:
 install: all
 	$(INSTALL_PROGRAM) -Dt "$(DESTDIR)$(bindir)" "$(builddir)"/*
 
-install-strip:
-	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
-
 test:
 	@mkdir -p "$(tmpdir)/reports"
 	go test $(GOFLAGS) -ldflags "$(LDFLAGS)" -coverprofile "$(tmpdir)/reports/coverage.out" ./...
 	go tool cover -html "$(tmpdir)/reports/coverage.out" -o "$(tmpdir)/reports/coverage.html"
+	go tool cover -func "$(tmpdir)/reports/coverage.out" -o "$(tmpdir)/reports/coverage.txt"
 
 uninstall:
 	rm -fv "$(bindir)/$(notdir $(CURDIR))"
 
-.PHONY: all build check clean dist install install-strip test uninstall
+.PHONY: all build check clean dist install test uninstall

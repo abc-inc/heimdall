@@ -33,11 +33,18 @@ type jiraCfg struct {
 	opts    *jira.SearchOptions
 }
 
+const envHelp = `
+JIRA_API_URL  https://jira.company.corp/rest/api/v3
+JIRA_TOKEN    <PERSONAL_ACCESS_TOKEN>
+`
+
 func NewJiraCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "jira <subcommand>",
-		Short: "Query Jira",
-		Args:  cobra.ExactArgs(0),
+		Use:         "jira <subcommand>",
+		Short:       "Query Jira",
+		GroupID:     console.ServiceGroup,
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"help:environment": envHelp},
 	}
 
 	cmd.AddCommand(

@@ -23,6 +23,24 @@ import (
 	"github.com/spf13/viper"
 )
 
+const envHelp = `
+BACKGROUND         Background Color
+FOREGROUND         Foreground Color
+BORDER             Border Style (default: none)
+BORDER_BACKGROUND  Border Background Color
+BORDER_FOREGROUND  Border Foreground Color
+ALIGN              Text Alignment (default: left)
+HEIGHT             Text height
+WIDTH              Text width
+MARGIN             Text margin (default: 0 0)
+PADDING            Text padding (default: 0 0)
+BOLD               Bold text
+FAINT              Faint text
+ITALIC             Italicize text
+STRIKETHROUGH      Strikethrough text
+UNDERLINE          Underline text
+`
+
 func NewEchoCmd() *cobra.Command {
 	cfg := NewDefaultStyles()
 	cmd := &cobra.Command{
@@ -31,7 +49,8 @@ func NewEchoCmd() *cobra.Command {
 		Example: heredoc.Doc(`
 			heimdall echo --foreground=#ff0000 --bold "Error: something bad happened"
 		`),
-		Args: cobra.MinimumNArgs(1),
+		Args:        cobra.MinimumNArgs(1),
+		Annotations: map[string]string{"help:environment": envHelp},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return echo(cfg, args...)
 		},

@@ -33,19 +33,19 @@ import (
 )
 
 type CovRec struct {
-	Group     string `json:"group"`
-	Pkg       string `json:"pkg"`
-	Class     string `json:"class"`
-	InstrMis  int    `json:"instruction_missed"`
-	InstrCov  int    `json:"instruction_covered"`
-	BranchMis int    `json:"branch_missed"`
-	BranchCov int    `json:"branch_covered"`
-	LineMis   int    `json:"line_missed"`
-	LineCov   int    `json:"line_covered"`
-	ComplMis  int    `json:"complexity_missed"`
-	ComplCov  int    `json:"complexity_covered"`
-	MethMis   int    `json:"method_missed"`
-	MethCov   int    `json:"method_covered"`
+	Group     string `json:"group" yaml:"group"`
+	Pkg       string `json:"pkg" yaml:"pkg"`
+	Class     string `json:"class" yaml:"class"`
+	InstrMis  int    `json:"instruction_missed" yaml:"instruction_missed"`
+	InstrCov  int    `json:"instruction_covered" yaml:"instruction_covered"`
+	BranchMis int    `json:"branch_missed" yaml:"branch_missed"`
+	BranchCov int    `json:"branch_covered" yaml:"branch_covered"`
+	LineMis   int    `json:"line_missed" yaml:"line_missed"`
+	LineCov   int    `json:"line_covered" yaml:"line_covered"`
+	ComplMis  int    `json:"complexity_missed" yaml:"complexity_missed"`
+	ComplCov  int    `json:"complexity_covered" yaml:"complexity_covered"`
+	MethMis   int    `json:"method_missed" yaml:"method_missed"`
+	MethCov   int    `json:"method_covered" yaml:"method_covered"`
 }
 
 type jaCoCoCfg struct {

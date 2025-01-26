@@ -21,7 +21,6 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/docs"
@@ -33,23 +32,16 @@ import (
 	"github.com/abc-inc/heimdall/plugin/echo"
 	"github.com/abc-inc/heimdall/plugin/eval"
 	"github.com/abc-inc/heimdall/plugin/example"
-	"github.com/abc-inc/heimdall/plugin/format"
 	"github.com/abc-inc/heimdall/plugin/git"
 	"github.com/abc-inc/heimdall/plugin/github"
 	"github.com/abc-inc/heimdall/plugin/golang"
 	"github.com/abc-inc/heimdall/plugin/html"
-	"github.com/abc-inc/heimdall/plugin/http"
 	"github.com/abc-inc/heimdall/plugin/interactive"
 	"github.com/abc-inc/heimdall/plugin/java"
 	"github.com/abc-inc/heimdall/plugin/jira"
-	"github.com/abc-inc/heimdall/plugin/json"
 	"github.com/abc-inc/heimdall/plugin/keyring"
-	"github.com/abc-inc/heimdall/plugin/properties"
-	"github.com/abc-inc/heimdall/plugin/run"
+	"github.com/abc-inc/heimdall/plugin/parse"
 	"github.com/abc-inc/heimdall/plugin/ssh"
-	"github.com/abc-inc/heimdall/plugin/toml"
-	"github.com/abc-inc/heimdall/plugin/xml"
-	"github.com/abc-inc/heimdall/plugin/yaml"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -62,11 +54,6 @@ const version = "0.0"
 
 func main() {
 	console.Version = version
-	d := internal.Must(time.Parse(time.DateOnly, "2024-12-01"))
-	if time.Now().After(d) {
-		log.Warn().Msgf("This is an experimental build and stopped working after %s.", d.Format(time.DateOnly))
-		os.Exit(1)
-	}
 
 	rootCmd := &cobra.Command{
 		Use:   "heimdall <command>",
@@ -75,10 +62,19 @@ func main() {
 			console.SetFormat(map[string]any{
 				"jq":     cmd.Flag("jq"),
 				"output": cmd.Flag("output"),
+				"pretty": cmd.Flag("pretty"),
 				"query":  cmd.Flag("query")},
 			)
 		},
 	}
+
+	rootCmd.AddGroup(
+		&cobra.Group{ID: console.FileGroup, Title: console.FileGroup + ":"},
+		&cobra.Group{ID: console.HeimdallGroup, Title: console.HeimdallGroup + ":"},
+		&cobra.Group{ID: console.MiscGroup, Title: console.MiscGroup + ":"},
+		&cobra.Group{ID: console.ServiceGroup, Title: console.ServiceGroup + ":"},
+		&cobra.Group{ID: console.SoftwareGroup, Title: console.SoftwareGroup + ":"},
+	)
 
 	rootCmd.AddCommand(
 		artifactory.NewArtifactoryCmd(),
@@ -88,23 +84,16 @@ func main() {
 		echo.NewEchoCmd(),
 		example.NewExampleCmd(),
 		eval.NewEvalCmd(),
-		format.NewFormatCmd(),
 		git.NewGitCmd(),
 		github.NewGitHubCmd(),
 		golang.NewGoCmd(),
 		html.NewHTMLCmd(),
-		http.NewHTTPCmd(),
 		interactive.NewInteractiveCmd(),
 		java.NewJavaCmd(),
 		jira.NewJiraCmd(),
-		json.NewJSONCmd(),
 		keyring.NewKeyringCmd(),
-		properties.NewPropertiesCmd(),
-		run.NewRunCmd(),
+		parse.NewParseCmd(),
 		ssh.NewSSHCmd(),
-		toml.NewTOMLCmd(),
-		xml.NewXMLCmd(),
-		yaml.NewYAMLCmd(),
 		versionCmd(),
 	)
 
@@ -203,9 +192,10 @@ func presetFlags(cmd *cobra.Command) {
 
 func versionCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "version",
-		Short: "Show Heimdall version",
-		Args:  cobra.ExactArgs(0),
+		Use:     "version",
+		Short:   "Show Heimdall version",
+		GroupID: console.HeimdallGroup,
+		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			t, rev := "", ""
 			if info, ok := debug.ReadBuildInfo(); ok {

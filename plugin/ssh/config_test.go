@@ -20,12 +20,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestLoadConfig(t *testing.T) {
-	f := filepath.Join(res.GetRootDir(), "testdata", "ssh_config")
+	f := filepath.Join(test.GetRootDir(), "testdata", "ssh_config")
 	all := loadConfig(configCfg{file: f, host: "code.company.corp"})
 	require.Equal(t, 4, len(all))
 	require.Equal(t, "gateway.company.corp", all["HostName"])

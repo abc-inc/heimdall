@@ -20,12 +20,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestProcessJaCoCo(t *testing.T) {
-	cfg := jaCoCoCfg{files: []string{filepath.Join(res.GetRootDir(), "testdata", "jacoco.csv")}, summary: false}
+	cfg := jaCoCoCfg{files: []string{filepath.Join(test.GetRootDir(), "testdata", "jacoco.csv")}, summary: false}
 
 	crs := processJaCoCo(cfg)
 	require.Equal(t, 299, len(crs))

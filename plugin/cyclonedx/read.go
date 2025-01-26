@@ -29,6 +29,7 @@ import (
 )
 
 type readCfg struct {
+	console.OutCfg
 	name   string
 	format string
 	pretty bool
@@ -52,6 +53,7 @@ func NewReadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.format, "format", cfg.format, "Target format of the SBOM file (xml or json)")
 	cmd.Flags().BoolVar(&cfg.pretty, "pretty", cfg.pretty, "Pretty print the SBOM")
 
+	console.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 

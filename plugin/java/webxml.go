@@ -21,7 +21,7 @@ import (
 
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
-	"github.com/abc-inc/heimdall/plugin/xml"
+	"github.com/abc-inc/heimdall/plugin/parse"
 	"github.com/clbanning/mxj/v2"
 	"github.com/gobwas/glob"
 	"github.com/rs/zerolog/log"
@@ -53,7 +53,7 @@ func NewWebXMLCmd() *cobra.Command {
 }
 
 func processWebXML(cfg webXMLCfg, uri string) any {
-	m := xml.ReadXML(uri)
+	m := parse.ReadXML(uri)
 
 	switch cfg.mode {
 	case "raw":

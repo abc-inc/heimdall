@@ -18,8 +18,9 @@ package eval
 
 import (
 	"encoding/json"
+	"net/url"
 	"os"
-	"path"
+	"reflect"
 	"strconv"
 	"strings"
 	"text/template"
@@ -27,10 +28,12 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
+	"github.com/abc-inc/heimdall/plugin/parse"
 	"github.com/abc-inc/heimdall/res"
 	sprig "github.com/go-task/slim-sprig/v3"
 	"github.com/gobwas/glob"
 	"github.com/mattn/go-zglob"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
@@ -53,17 +56,13 @@ type evalCfg struct {
 	verbose  bool
 }
 
-type input struct {
-	file  string
-	alias string
-	typ   string
-}
-
-func (i input) String() string {
-	return i.file + ":" + i.alias + ":" + i.typ
-}
-
 var engines = make(map[string]func() engine)
+
+const envHelp = `
+CSV_DELIMITER           ,
+HEIMDALL_TEMPLATE       
+HEIMDALL_TEMPLATE_FILE  
+`
 
 func NewEvalCmd() *cobra.Command {
 	names := maps.Keys(engines)
@@ -73,6 +72,10 @@ func NewEvalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "eval [flags] [<file>...]",
 		Short: "Evaluate the given expression on all input files",
+		Long: heredoc.Doc(`
+			Evaluate the given expression on all input files.
+			The following file formats are supported: csv, json, properties, xml, yaml
+		`),
 		Example: heredoc.Doc(`
 			# check whether the filename of the URL matches the given regular expression
 			heimdall eval -e 'base(distributionUrl) matches "gradle-[6-9][.]"' gradle/wrapper/gradle-wrapper.properties
@@ -89,42 +92,7 @@ func NewEvalCmd() *cobra.Command {
 		`),
 		Args: cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			if _, ok := engines[cfg.engine]; !ok {
-				log.Fatal().Msgf(`cannot find engine "%s", must be one of "%s"`, cfg.engine, strings.Join(names, `", "`))
-			}
-			if t := os.Getenv("HEIMDALL_TEMPLATE_FILE"); t != "" && cfg.template == "" {
-				internal.MustNoErr(os.Setenv("HEIMDALL_TEMPLATE", string(internal.Must(os.ReadFile(t)))))
-			}
-			if t := os.Getenv("HEIMDALL_TEMPLATE"); t != "" && cfg.template == "" {
-				cfg.template = t
-			}
-
-			cfg.files = args
-			result, err := eval(cfg)
-			if err != nil {
-				log.Fatal().Err(err).Send()
-			}
-			if !cfg.quiet {
-				tmpl := template.Must(template.New("result").Parse(cfg.template))
-				for _, r := range result {
-					if cfg.template != "" {
-						if i, convIntErr := strconv.Atoi(r); convIntErr == nil {
-							internal.MustNoErr(tmpl.Execute(console.Output, i))
-						} else if f, convFloatErr := strconv.ParseFloat(r, 64); convFloatErr == nil {
-							internal.MustNoErr(tmpl.Execute(console.Output, f))
-						} else if b, convBoolErr := strconv.ParseBool(r); convBoolErr == nil {
-							internal.MustNoErr(tmpl.Execute(console.Output, b))
-						} else {
-							internal.MustNoErr(tmpl.Execute(console.Output, r))
-						}
-					} else {
-						console.Fmtln(r)
-					}
-				}
-			}
-			if len(result) > 0 && result[len(result)-1] == "false" {
-				os.Exit(1)
-			}
+			eval(cfg, args)
 		},
 	}
 
@@ -133,7 +101,6 @@ func NewEvalCmd() *cobra.Command {
 	cmd.Flags().StringArrayVarP(&cfg.expr, "expression", "e", cfg.expr, "Expression to evaluate against the input files. May be provided multiple times.")
 	cmd.Flags().BoolVar(&cfg.ignMiss, "ignore-missing", cfg.ignMiss, "Don't fail or report status for missing files")
 	cmd.Flags().BoolVar(&cfg.quiet, "quiet", false, "Enable quiet mode (suppress normal output)")
-	cmd.Flags().StringVar(&cfg.template, "template", cfg.template, "Output template to use (Go template syntax).")
 	cmd.Flags().BoolVarP(&cfg.verbose, "verbose", "v", false, "Enable verbose mode")
 
 	console.AddOutputFlag(cmd, &cfg.output)
@@ -141,13 +108,56 @@ func NewEvalCmd() *cobra.Command {
 	return cmd
 }
 
-func eval(cfg evalCfg) ([]string, error) {
+func eval(cfg evalCfg, args []string) {
+	if _, ok := engines[cfg.engine]; !ok {
+		names := maps.Keys(engines)
+		slices.Sort(names)
+		log.Fatal().Msgf(`cannot find engine "%s", must be one of "%s"`, cfg.engine, strings.Join(names, `", "`))
+	}
+	if t := os.Getenv("HEIMDALL_TEMPLATE_FILE"); t != "" && cfg.template == "" {
+		internal.MustNoErr(os.Setenv("HEIMDALL_TEMPLATE", string(internal.Must(os.ReadFile(t)))))
+	}
+	if t := os.Getenv("HEIMDALL_TEMPLATE"); t != "" && cfg.template == "" {
+		cfg.template = t
+	}
+
+	cfg.files = args
+	result, err := doEval(cfg)
+	if err != nil {
+		log.WithLevel(zerolog.FatalLevel).Err(err).Send()
+		os.Exit(2)
+	}
+	if !cfg.quiet {
+		tmpl := internal.Must(template.New("result").Parse(cfg.template))
+		for _, r := range result {
+			if cfg.template != "" {
+				if i, convIntErr := strconv.Atoi(r); convIntErr == nil {
+					internal.MustNoErr(tmpl.Execute(console.Output, i))
+				} else if f, convFloatErr := strconv.ParseFloat(r, 64); convFloatErr == nil {
+					internal.MustNoErr(tmpl.Execute(console.Output, f))
+				} else if b, convBoolErr := strconv.ParseBool(r); convBoolErr == nil {
+					internal.MustNoErr(tmpl.Execute(console.Output, b))
+				} else {
+					internal.MustNoErr(tmpl.Execute(console.Output, r))
+				}
+			} else {
+				console.Fmtln(r)
+			}
+		}
+	}
+	all := strings.Join(result, "\n")
+	if all == "" || all == "0" || all == "false" {
+		os.Exit(1)
+	}
+}
+
+func doEval(cfg evalCfg) ([]string, error) {
 	fs := resolveFiles(cfg.files)
 
 	envMap := make(map[string]any)
 	for _, f := range fs {
-		if cfg.ignMiss && f.file != "-" {
-			if fi, err := os.Stat(f.file); err != nil || !fi.Mode().IsRegular() {
+		if cfg.ignMiss && f.File != "-" {
+			if fi, err := os.Stat(f.File); err != nil || !fi.Mode().IsRegular() {
 				continue
 			}
 		}
@@ -163,52 +173,50 @@ func eval(cfg evalCfg) ([]string, error) {
 	internal.MustNoErr(e.addFunc(map[string]any{"glob": func(p, s string) bool {
 		return internal.Must(glob.Compile(p)).Match(s)
 	}}))
+	internal.MustNoErr(e.addFunc(map[string]any{"urlEncode": urlEncode, "urlDecode": urlDecode}))
 	internal.MustNoErr(e.addFunc(sprig.GenericFuncMap()))
 
 	return e.eval(cfg, envMap)
 }
 
-func resolveFiles(fs []string) (list []input) {
+func urlDecode(str string) string { s, _ := url.QueryUnescape(str); return s }
+
+func urlEncode(str string) string { return url.QueryEscape(str) }
+
+func resolveFiles(fs []string) (list []parse.Input) {
 	for _, f := range fs {
 		n, post, _ := strings.Cut(f, ":")
 		if n == "-" {
-			list = append(list, splitNamePrefixType(f))
+			list = append(list, parse.SplitNamePrefixType(f))
 			continue
 		}
 		log.Debug().Str("glob", n).Msg("Resolving files")
 		gs, err := zglob.Glob(n)
 		internal.MustOkMsgf(gs, err == nil, "cannot resolve any files matching glob '%s'", n)
 		for _, g := range internal.Must(gs, err) {
-			list = append(list, splitNamePrefixType(g+":"+post))
+			list = append(list, parse.SplitNamePrefixType(g+":"+post))
 		}
 	}
 	return list
 }
 
-func load(i input, envMap map[string]any) {
-	log.Debug().Str("file", i.file).Msg("Loading")
-	r := internal.Must(res.Open(i.file))
+func load(i parse.Input, envMap map[string]any) {
+	log.Debug().Str("file", i.File).Msg("Loading")
+	r := internal.Must(res.Open(i.File))
 	defer func() { _ = r.Close() }()
 
-	if d, ok := res.Decoders[i.typ]; ok {
-		log.Debug().Str("type", i.typ).Msg("Using decoder")
-		merge(i.alias, envMap, internal.Must(d(r)))
+	if d, ok := parse.Decoders[i.Typ]; ok {
+		log.Debug().Str("type", i.Typ).Msg("Using decoder")
+		v := internal.Must[any](d(r))
+		if reflect.TypeOf(v).Kind() == reflect.Map {
+			merge(envMap, i.Alias, v.(map[string]any))
+		} else {
+			envMap[i.Alias] = v
+		}
 	}
 }
 
-func splitNamePrefixType(name string) input {
-	parts := strings.SplitN(name, ":", 3)
-	switch len(parts) {
-	case 3:
-		return input{file: parts[0], alias: parts[1], typ: parts[2]}
-	case 2:
-		return input{file: parts[0], alias: parts[1], typ: strings.TrimPrefix(path.Ext(parts[0]), ".")}
-	default:
-		return input{file: parts[0], alias: "", typ: strings.TrimPrefix(path.Ext(parts[0]), ".")}
-	}
-}
-
-func merge(alias string, envMap, varMap map[string]any) {
+func merge(envMap map[string]any, alias string, varMap map[string]any) {
 	if alias != "" {
 		envMap[alias] = varMap
 	} else {

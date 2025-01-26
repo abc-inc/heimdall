@@ -16,13 +16,17 @@
 
 package cyclonedx
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/abc-inc/heimdall/console"
+	"github.com/spf13/cobra"
+)
 
 func NewCycloneDXCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cyclonedx",
-		Short: "Process CycloneDX SBOM files",
-		Args:  cobra.ExactArgs(0),
+		Use:     "cyclonedx",
+		Short:   "Process CycloneDX SBOM files",
+		GroupID: console.SoftwareGroup,
+		Args:    cobra.ExactArgs(0),
 	}
 
 	cmd.AddCommand(

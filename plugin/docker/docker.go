@@ -29,9 +29,10 @@ type dockerCfg struct {
 
 func NewDockerCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "docker <subcommand>",
-		Short: "Process Docker-related files",
-		Args:  cobra.ExactArgs(0),
+		Use:     "docker <subcommand>",
+		Short:   "Process Docker-related files",
+		GroupID: console.SoftwareGroup,
+		Args:    cobra.ExactArgs(0),
 	}
 
 	cmd.AddCommand(

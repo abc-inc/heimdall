@@ -21,12 +21,12 @@ import (
 	"testing"
 
 	"github.com/abc-inc/heimdall/plugin/html"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewHTMLCmd(t *testing.T) {
-	got := res.Run(`.["web-app"]["-version"]`,
-		html.NewHTMLCmd(), []string{filepath.Join(res.GetRootDir(), "testdata", "web.xml")})
-	require.Equal(t, "3.1", got)
+	got := test.Run("",
+		html.NewHTMLCmd(), []string{filepath.Join(test.GetRootDir(), "testdata", "index.html"), "--find", "div b"})
+	require.Equal(t, "bold", got)
 }

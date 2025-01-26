@@ -1,4 +1,4 @@
-// Copyright 2023 The Heimdall authors
+// Copyright 2024 The Heimdall authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,51 +12,67 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_format
+//go:build !no_parse && !no_xml
 
-package format
+package parse
 
 import (
+	"io"
+	"maps"
+
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
+	"github.com/clbanning/mxj/v2"
 	"github.com/spf13/cobra"
 )
 
-type formatCfg struct {
+type xmlCfg struct {
 	console.OutCfg
-	file string
 }
 
-func NewFormatCmd() *cobra.Command {
-	cfg := formatCfg{}
-	cmd := &cobra.Command{
-		Use:   "format",
-		Short: "Convert the input to the given output format",
-		Example: heredoc.Doc(`
-			heimdall format --output table <./gradle/wrapper/gradle-wrapper.properties 
+func NewXMLCmd() *cobra.Command {
+	cfg := xmlCfg{}
 
-			env | heimdall format --output json
+	cmd := &cobra.Command{
+		Use:     "xml [flags] <file>...",
+		Short:   "Load XML files and process them",
+		GroupID: console.FileGroup,
+		Example: heredoc.Doc(`
+			heimdall xml --query 'to_number("web-app"."-version")' WEB-INF/web.xml"
 		`),
-		Args: cobra.MinimumNArgs(0),
+		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			format(cfg)
+			m := make(map[string]any)
+			for _, f := range args {
+				maps.Copy(m, processXML(f))
+			}
+			console.Fmtln(m)
 		},
 	}
 
-	console.AddFileFlag(cmd, &cfg.file, "Path to the input file or URL", console.Optional)
 	console.AddOutputFlags(cmd, &cfg.OutCfg)
-	internal.MustNoErr(cmd.MarkPersistentFlagRequired("output"))
+	cmd.DisableFlagsInUseLine = true
 	return cmd
 }
 
-func format(cfg formatCfg) {
-	if cfg.file == "" {
-		cfg.file = "-"
-	}
+func processXML(f string) map[string]any {
+	return ReadXML(f).Old()
+}
 
-	r := internal.Must(res.Open(cfg.file))
+func ReadXML(name string) mxj.Map {
+	r := internal.Must(res.Open(name))
 	defer func() { _ = r.Close() }()
-	console.Fmtln(console.Parse(r))
+	return internal.Must(mxj.NewMapXmlReader(r))
+}
+
+func init() {
+	Decoders["xml"] = func(r io.Reader) (any, error) {
+		m, err := mxj.NewMapXmlReader(r)
+		if m != nil {
+			return m.Old(), err
+		}
+		return nil, err
+	}
 }

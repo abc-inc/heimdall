@@ -20,7 +20,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"os"
-	"reflect"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
@@ -39,6 +38,10 @@ type keystoreCfg struct {
 	password []byte
 }
 
+const envHelp = `
+KEYSTORE_PASSWORD  <PASSWORD>
+`
+
 func NewKeystoreCmd() *cobra.Command {
 	cfg := keystoreCfg{password: []byte(os.Getenv("KEYSTORE_PASSWORD"))}
 	if len(cfg.password) == 0 {
@@ -51,7 +54,8 @@ func NewKeystoreCmd() *cobra.Command {
 		Example: heredoc.Doc(`
 			heimdall java keystore -f keystore.jks
 		`),
-		Args: cobra.ExactArgs(0),
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"help:environment": envHelp},
 		Run: func(cmd *cobra.Command, args []string) {
 			console.Fmtln(listEntries(cfg))
 		},
@@ -91,9 +95,4 @@ func readKeyStore(cfg keystoreCfg) keystore.KeyStore {
 		log.Fatal().Err(err).Send()
 	}
 	return ks
-}
-
-func init() {
-	var e []Entry
-	console.EnableMarshalling(reflect.TypeOf(e))
 }

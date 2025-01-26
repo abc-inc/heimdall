@@ -19,13 +19,13 @@ import (
 
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/plugin/echo"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewEchoCmd(t *testing.T) {
 	cmd := echo.NewEchoCmd()
 	internal.MustNoErr(cmd.Flags().Set("foreground", "#ff0000"))
-	got := res.RunStdout(``, cmd, []string{"error"})
+	got := test.RunStdout(``, cmd, []string{"error"})
 	require.Equal(t, "error", got)
 }

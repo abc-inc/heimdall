@@ -42,8 +42,9 @@ func NewExampleCmd() *cobra.Command {
 	cfg := exampleCfg{style: "github"}
 
 	cmd := &cobra.Command{
-		Use:   "example [<name>]",
-		Short: "Print examples and detailed information",
+		Use:     "example [<name>]",
+		Short:   "Print examples and detailed information",
+		GroupID: console.HeimdallGroup,
 		Example: heredoc.Doc(`
 			heimdall example java
 		`),

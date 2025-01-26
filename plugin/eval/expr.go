@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"github.com/abc-inc/heimdall/internal"
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/conf"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/conf"
 )
 
 type exprEngine struct {
@@ -34,7 +34,6 @@ func newExprEngine() engine {
 	return &exprEngine{make(map[string]any), []expr.Option{
 		expr.DisableAllBuiltins(),
 		expr.EnableBuiltin("len"),
-		expr.ExperimentalPipes(),
 	}}
 }
 
@@ -42,8 +41,11 @@ func (e *exprEngine) eval(cfg evalCfg, envMap map[string]any) (res []string, err
 	internal.MustNoErr(e.addFunc(envMap))
 	e.AddOpt(expr.Env(e.funcMap))
 	for _, str := range cfg.expr {
-		e.AddOpt(AllowUndefinedVariables(!strings.Contains(str, "??")))
+		if str = strings.TrimSpace(str); str == "" {
+			continue
+		}
 
+		e.AddOpt(AllowUndefinedVariables(!strings.Contains(str, "??")))
 		prg := internal.Must(expr.Compile(str, e.opts...))
 		out := internal.Must(expr.Run(prg, e.funcMap))
 		res = append(res, fmt.Sprint(out))

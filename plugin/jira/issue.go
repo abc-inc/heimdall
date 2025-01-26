@@ -42,7 +42,7 @@ func NewIssueCmd() *cobra.Command {
 			# list the top 10 open bugs and return all details (including nested fields) about assignee, priority and summary.
 			heimdall jira issue --filter "project = ABC AND type = Bug AND resolution = Unresolved ORDER BY priority DESC, updated DESC" \
 			    --fields 'assignee,priority,summary' --max-results 10
-			
+
 			# list all stories and output a custom formatted JSON for summarizing the release notes
 			heimdall jira issue --filter "project = ABC AND type = Story AND fixVersion='ABC 1.2' ORDER BY id" \
 			    --jq ".[] | {id: .key, summary: .fields.summary, status: .fields.status.name}"

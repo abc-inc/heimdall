@@ -35,7 +35,7 @@ func newTmplEngine() engine {
 func (e *tmplEngine) eval(cfg evalCfg, envMap map[string]any) (res []string, err error) {
 	internal.MustNoErr(e.addFunc(envMap))
 	for _, str := range cfg.expr {
-		e.tmpl = template.Must(e.tmpl.Parse(str))
+		e.tmpl = internal.Must(e.tmpl.Parse(str))
 		w := strings.Builder{}
 		internal.MustNoErr(e.tmpl.Execute(&w, envMap))
 		res = append(res, w.String())

@@ -18,9 +18,8 @@ package git
 
 import (
 	"encoding/json"
-	"fmt"
+	"time"
 
-	"github.com/abc-inc/heimdall/internal"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
@@ -33,40 +32,30 @@ func (h Hash) String() string {
 }
 
 func (h Hash) MarshalJSON() ([]byte, error) {
-	return json.Marshal(plumbing.Hash(h).String())
+	return json.Marshal(h.String())
 }
 
 func (h Hash) MarshalYAML() (any, error) {
-	return plumbing.Hash(h).String(), nil
+	return h.String(), nil
 }
 
 // Commit is a marshalling-friendly object.Commit.
 type Commit struct {
 	// Hash of the commit object.
-	Hash Hash
+	Hash Hash `json:"hash" yaml:"hash"`
 	// Author is the original author of the commit.
-	Author object.Signature
+	Author Signature `json:"author" yaml:"author"`
 	// Committer is the one performing the commit, might be different from
 	// Author.
-	Committer object.Signature
+	Committer Signature `json:"committer" yaml:"committer"`
 	// PGPSignature is the PGP signature of the commit.
-	PGPSignature string
+	PGPSignature string `json:"pgpSignature,omitempty" yaml:"pgp_signature,omitempty"`
 	// Message is the commit message, contains arbitrary text.
-	Message string
+	Message string `json:"message,omitempty" yaml:"message"`
 	// TreeHash is the hash of the root tree of the commit.
-	TreeHash Hash
+	TreeHash Hash `json:"treeHash" yaml:"tree_hash"`
 	// ParentHashes are the hashes of the parent commits of the commit.
-	ParentHashes []Hash
-}
-
-func (c Commit) MarshalJSON() ([]byte, error) {
-	j := fmt.Sprintf(
-		`{"Hash": %s, "Author": %s, "Committer": %s, "PGPSignature": %s, "Message": %s, "TreeHash": %s, "ParentHashes": %s}`,
-		internal.Must(json.Marshal(c.Hash.String())), internal.Must(json.Marshal(c.Author)),
-		internal.Must(json.Marshal(c.Committer)), internal.Must(json.Marshal(c.PGPSignature)),
-		internal.Must(json.Marshal(c.Message)), internal.Must(json.Marshal(c.TreeHash.String())),
-		internal.Must(json.Marshal(c.ParentHashes)))
-	return []byte(j), nil
+	ParentHashes []Hash `json:"parentHashes,omitempty" yaml:"parent_hashes,omitempty"`
 }
 
 func NewCommit(c *object.Commit) *Commit {
@@ -76,11 +65,20 @@ func NewCommit(c *object.Commit) *Commit {
 	}
 	return &Commit{
 		Hash:         Hash(c.Hash),
-		Author:       c.Author,
-		Committer:    c.Committer,
+		Author:       Signature(c.Author),
+		Committer:    Signature(c.Committer),
 		PGPSignature: c.PGPSignature,
 		Message:      c.Message,
 		TreeHash:     Hash(c.TreeHash),
 		ParentHashes: pHs,
 	}
+}
+
+type Signature struct {
+	// Name represents a person name. It is an arbitrary string.
+	Name string `json:"name" yaml:"name"`
+	// Email is an email, but it cannot be assumed to be well-formed.
+	Email string `json:"email" yaml:"email"`
+	// When is the timestamp of the signature.
+	When time.Time `json:"when" yaml:"when"`
 }

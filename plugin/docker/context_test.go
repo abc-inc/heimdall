@@ -20,12 +20,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestListMatches(t *testing.T) {
-	fs := listMatches(dockerCfg{file: filepath.Join(res.GetRootDir(), "testdata", ".dockerignore")})
+	fs := listMatches(dockerCfg{file: filepath.Join(test.GetRootDir(), "testdata", ".dockerignore")})
 	require.Contains(t, fs, "gradlew")
 }
 

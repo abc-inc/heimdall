@@ -30,6 +30,7 @@ type downloadCfg struct {
 	console.OutCfg
 	pattern string
 	target  string
+	explode bool
 	noFlat  bool
 }
 
@@ -44,6 +45,7 @@ func NewDownloadCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVar(&cfg.explode, "explode", cfg.explode, "Extract an archive after it is downloaded from Artifactory")
 	cmd.Flags().BoolVar(&cfg.noFlat, "no-flat", cfg.noFlat, "Do not flatten the target directory")
 	cmd.Flags().StringVarP(&cfg.pattern, "pattern", "p", cfg.pattern, "Download only assets that match a glob pattern")
 	cmd.Flags().StringVarP(&cfg.target, "target", "t", cfg.target, "Target path")
@@ -57,6 +59,7 @@ func download(cfg downloadCfg) map[string]entities.Artifact {
 	rtManager := newRtManager()
 
 	params := services.NewDownloadParams()
+	params.Explode = cfg.explode
 	params.Flat = !cfg.noFlat
 	params.Pattern, params.Target = cfg.pattern, cfg.target
 	params.Recursive = true

@@ -95,6 +95,11 @@ type ghCfg struct {
 	teamID           int64
 	displayName      *string
 	role             string
+	// Actions
+	workflowFileName string
+	inputs           map[string]interface{}
+	// Enterprise
+	enterprise string
 	// Output
 	console.OutCfg
 }
@@ -113,11 +118,22 @@ func newGHCfg() *ghCfg {
 	}
 }
 
+const envHelp = `
+GH_TOKEN        <PERSONAL_ACCESS_TOKEN>
+GH_HOST         https://api.github.com
+GH_OWNER        <OWNER>
+GH_REPO         <REPO>
+GITHUB_TOKEN    <PERSONAL_ACCESS_TOKEN>
+GITHUB_API_URL  https://api.github.com
+`
+
 func NewGitHubCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "github <subcommand>",
-		Short: "Query information from GitHub",
-		Args:  cobra.ExactArgs(0),
+		Use:         "github <subcommand>",
+		Short:       "Query information from GitHub",
+		GroupID:     console.ServiceGroup,
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"help:environment": envHelp},
 	}
 
 	cmd.AddCommand(
@@ -290,7 +306,7 @@ func newClient() *github.Client {
 	if strings.HasPrefix(url, "https://api.github.com") {
 		return github.NewClient(httpClient)
 	}
-	return internal.Must(github.NewClient(httpClient).WithEnterpriseURLs(url, strings.TrimSuffix(url, "/api/v3")))
+	return internal.Must(github.NewClient(httpClient).WithEnterpriseURLs(url, strings.TrimSuffix(strings.TrimSuffix(url, "/v3"), "/api")))
 }
 
 func getCtx(_ *ghCfg) context.Context {

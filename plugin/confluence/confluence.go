@@ -44,11 +44,18 @@ type Topic struct {
 	SubTopics []Topic
 }
 
+const envHelp = `
+CONFLUENCE_API_URL  https://confluence.company.corp/wiki/api
+CONFLUENCE_TOKEN    <PERSONAL_ACCESS_TOKEN>
+`
+
 func NewConfluenceCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "confluence",
-		Short: "Query Confluence",
-		Args:  cobra.ExactArgs(0),
+		Use:         "confluence",
+		Short:       "Query Confluence",
+		GroupID:     console.ServiceGroup,
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"help:environment": envHelp},
 	}
 
 	cmd.AddCommand(

@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_yaml
+//go:build !no_parse && !no_json
 
-package yaml_test
+package parse_test
 
 import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abc-inc/heimdall/plugin/yaml"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/plugin/parse"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewYAMLCmd(t *testing.T) {
-	got := res.Run(`.jobs.goreleaser.steps | map(select(.name == "Checkout"))[].uses`,
-		yaml.NewYAMLCmd(), []string{filepath.Join(res.GetRootDir(), ".github", "workflows", "release.yml")})
-	require.Equal(t, "actions/checkout@v3", got)
+func TestNewJSONCmd(t *testing.T) {
+	got := test.Run(".languages[0]",
+		parse.NewJSONCmd(), []string{filepath.Join(test.GetRootDir(), "testdata", "codeql.json")})
+	require.Equal(t, "go", got)
 }

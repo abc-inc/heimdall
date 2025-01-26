@@ -16,18 +16,19 @@
 
 package git
 
-import (
-	"reflect"
+import "github.com/spf13/cobra"
 
-	"github.com/abc-inc/heimdall/console"
-	"github.com/spf13/cobra"
-)
+const envHelp = `
+GIT_USERNAME  <USERNAME>
+GIT_PASSWORD  <PASSWORD>
+`
 
 func NewGitCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "git <subcommand>",
-		Short: "Query information from Git repositories",
-		Args:  cobra.ExactArgs(0),
+		Use:         "git <subcommand>",
+		Short:       "Query information from Git repositories",
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"help:environment": envHelp},
 	}
 
 	cmd.AddCommand(
@@ -35,8 +36,4 @@ func NewGitCmd() *cobra.Command {
 	)
 
 	return cmd
-}
-
-func init() {
-	console.EnableMarshalling(reflect.TypeOf(Commit{}))
 }

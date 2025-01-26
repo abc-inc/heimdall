@@ -20,13 +20,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abc-inc/heimdall/plugin/xml"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/plugin/parse"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestListServlets(t *testing.T) {
-	app := listServlets(xml.ReadXML(filepath.Join(res.GetRootDir(), "testdata", "web.xml")))
+	app := listServlets(parse.ReadXML(filepath.Join(test.GetRootDir(), "testdata", "web.xml")))
 	require.Equal(t, 2, len(app.Mapping))
 
 	require.Equal(t, "SpnegoServlet", app.Mapping[0].Servlet.String())

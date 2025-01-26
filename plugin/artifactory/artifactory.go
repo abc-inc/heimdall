@@ -18,8 +18,8 @@ package artifactory
 
 import (
 	"os"
-	"strings"
 
+	"github.com/abc-inc/heimdall/console"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/auth"
@@ -28,11 +28,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const envHelp = `
+ARTIFACTORY_BASE_URL  https://artifacts.company.corp/artifactory
+ARTIFACTORY_TOKEN     <PERSONAL_ACCESS_TOKEN>
+`
+
 func NewArtifactoryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "artifactory <subcommand>",
-		Short: "Various Artifactory-related commands",
-		Args:  cobra.ExactArgs(0),
+		Use:         "artifactory <subcommand>",
+		Short:       "Various Artifactory-related commands",
+		GroupID:     console.ServiceGroup,
+		Args:        cobra.ExactArgs(0),
+		Annotations: map[string]string{"help:environment": envHelp},
 	}
 
 	cmd.AddCommand(
@@ -51,7 +58,7 @@ func newRtManager() artifactory.ArtifactoryServicesManager {
 	internal.MustOkMsgf(tok, ok, "environment variable '%s' must be set", "ARTIFACTORY_TOKEN")
 
 	rtDetails := auth.NewArtifactoryDetails()
-	rtDetails.SetUrl(strings.TrimSuffix(url, "/") + "/")
+	rtDetails.SetUrl(url)
 	rtDetails.SetAccessToken(tok)
 
 	svcCfg := internal.Must(config.NewConfigBuilder().SetServiceDetails(rtDetails).Build())

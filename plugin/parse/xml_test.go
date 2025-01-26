@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_json
+//go:build !no_parse && !no_xml
 
-package json_test
+package parse_test
 
 import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abc-inc/heimdall/plugin/json"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/plugin/parse"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewJSONCmd(t *testing.T) {
-	got := res.Run(".languages[0]",
-		json.NewJSONCmd(), []string{filepath.Join(res.GetRootDir(), "testdata", "codeql.json")})
-	require.Equal(t, "go", got)
+func TestNewXMLCmd(t *testing.T) {
+	got := test.Run(`.["web-app"]["-version"]`,
+		parse.NewXMLCmd(), []string{filepath.Join(test.GetRootDir(), "testdata", "web.xml")})
+	require.Equal(t, "3.1", got)
 }

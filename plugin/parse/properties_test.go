@@ -1,4 +1,4 @@
-// Copyright 2023 The Heimdall authors
+// Copyright 2024 The Heimdall authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_properties
+//go:build !no_parse && !no_properties
 
-package properties
+package parse
 
 import (
 	"path/filepath"
@@ -23,7 +23,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/console"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,7 +34,7 @@ func TestProcessProps(t *testing.T) {
 		zipStoreBase=GRADLE_USER_HOME
 		zipstoreBase=/gradle`)
 
-	f := filepath.Join(res.GetRootDir(), "testdata", "gradle", "wrapper", "gradle-wrapper.properties")
+	f := filepath.Join(test.GetRootDir(), "testdata", "gradle", "wrapper", "gradle-wrapper.properties")
 	tests := []struct {
 		name string
 		cfg  propsCfg

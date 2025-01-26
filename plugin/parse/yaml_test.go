@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_toml
+//go:build !no_parse && !no_yaml
 
-package toml_test
+package parse_test
 
 import (
 	"path/filepath"
 	"testing"
 
-	"github.com/abc-inc/heimdall/plugin/toml"
-	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/plugin/parse"
+	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewTOMLCmd(t *testing.T) {
-	got := res.Run(`.bundles.spring | join(", ")`,
-		toml.NewTOMLCmd(), []string{filepath.Join(res.GetRootDir(), "testdata", "libs.versions.toml")})
-	require.Equal(t, "spring-aop, spring-webmvc", got)
+func TestNewYAMLCmd(t *testing.T) {
+	got := test.Run(`.jobs.goreleaser.steps | map(select(.name == "Checkout"))[].uses`,
+		parse.NewYAMLCmd(), []string{filepath.Join(test.GetRootDir(), ".github", "workflows", "release.yml")})
+	require.Equal(t, "actions/checkout@v3", got)
 }
