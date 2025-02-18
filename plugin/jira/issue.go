@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"
@@ -34,7 +34,7 @@ type jiraIssueCfg struct {
 }
 
 func NewIssueCmd() *cobra.Command {
-	cfg := jiraIssueCfg{jiraCfg: jiraCfg{baseURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
+	cfg := jiraIssueCfg{jiraCfg: jiraCfg{apiURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
 	cmd := &cobra.Command{
 		Use:   "issue",
 		Short: "Search Jira issues",
@@ -54,14 +54,14 @@ func NewIssueCmd() *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient(cfg.baseURL, cfg.token)
+			client, err := newClient(cfg.apiURL, cfg.token)
 			if err != nil {
 				return err
 			}
 
 			is, _, err := listIssues(client, cfg)
 			if err == nil {
-				console.Fmtln(is)
+				cli.Fmtln(is)
 			}
 			return err
 		},
@@ -70,7 +70,7 @@ func NewIssueCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.jql, "filter", cfg.jql, "JQL query for searching")
 	addCommonFlags(cmd, &cfg.jiraCfg)
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
 	cfg.opts = addSearchOpts(cmd)
 	return cmd

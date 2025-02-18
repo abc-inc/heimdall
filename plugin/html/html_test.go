@@ -20,13 +20,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/plugin/html"
 	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewHTMLCmd(t *testing.T) {
+	cli.SetFormat(map[string]any{"output": "json"})
 	got := test.Run("",
-		html.NewHTMLCmd(), []string{filepath.Join(test.GetRootDir(), "testdata", "index.html"), "--find", "div b"})
+		html.NewHTMLCmd(), []string{filepath.Join(test.GetRootDir(), "testdata", "index.html"), "-o", "text", "--find", "div b", "--text"})
 	require.Equal(t, "bold", got)
 }

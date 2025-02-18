@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/kevinburke/ssh_config"
@@ -30,7 +30,7 @@ import (
 )
 
 type configCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	file string
 	host string
 	kws  []string
@@ -48,7 +48,7 @@ func NewConfigCmd() *cobra.Command {
 		`),
 		Args: cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(loadConfig(cfg))
+			cli.Fmtln(loadConfig(cfg))
 		},
 	}
 
@@ -56,8 +56,8 @@ func NewConfigCmd() *cobra.Command {
 	cmd.Flags().StringSliceVarP(&cfg.kws, "keys", "k", nil, "List of keywords. May be provided multiple times.")
 	cmd.Flags().BoolVar(&cfg.def, "defaults", false, "Output default values for unspecified parameters")
 
-	console.AddFileFlag(cmd, &cfg.file, "Path to the SSH configuration file", console.Optional)
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddFileFlag(cmd, &cfg.file, "Path to the SSH configuration file", cli.Optional)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("hostname"))
 	return cmd
 }

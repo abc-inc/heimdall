@@ -17,9 +17,11 @@
 package parse
 
 import (
+	"io"
+
 	"github.com/BurntSushi/toml"
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/spf13/cobra"
@@ -27,7 +29,7 @@ import (
 )
 
 type tomlCfg struct {
-	console.OutCfg
+	cli.OutCfg
 }
 
 func NewTOMLCmd() *cobra.Command {
@@ -36,7 +38,7 @@ func NewTOMLCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "toml [flags] <file>...",
 		Short:   "Load TOML files and process them",
-		GroupID: console.FileGroup,
+		GroupID: cli.FileGroup,
 		Example: heredoc.Doc(`
 			heimdall toml --query 'libraries.junit.version' gradle/libs.versions.toml"
 		`),
@@ -46,11 +48,11 @@ func NewTOMLCmd() *cobra.Command {
 			for _, f := range args {
 				maps.Copy(m, ProcessTOML(f))
 			}
-			console.Fmtln(m)
+			cli.Fmtln(m)
 		},
 	}
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	cmd.DisableFlagsInUseLine = true
 	return cmd
 }
@@ -60,4 +62,12 @@ func ProcessTOML(name string) (m map[string]any) {
 	defer func() { _ = r.Close() }()
 	internal.Must(toml.NewDecoder(r).Decode(&m))
 	return m
+}
+
+func init() {
+	Decoders["toml"] = func(r io.Reader) (any, error) {
+		var m map[string]any
+		_, err := toml.NewDecoder(r).Decode(&m)
+		return m, err
+	}
 }

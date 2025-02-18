@@ -14,7 +14,7 @@
 
 //go:build !no_github
 
-//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v56@v56.0.0/github/teams\*.go ../../docs
+//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v69@v69.2.0/github/teams\*.go ../../docs
 
 package github
 
@@ -23,9 +23,9 @@ import (
 	"reflect"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/spf13/cobra"
 )
 
@@ -128,7 +128,7 @@ func NewTeamsCmd() *cobra.Command {
 		}
 	}
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 
@@ -166,7 +166,7 @@ func execTeams(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
 		x, _, err = svc.ListIDPGroupsForTeamBySlug(context.Background(), cfg.owner, cfg.slug)
 	case "idp-groups-in-organization":
 		x, _, err = svc.ListIDPGroupsInOrganization(context.Background(), cfg.owner,
-			&github.ListCursorOptions{Page: defVal(cfg.displayName), PerPage: cfg.perPage})
+			&github.ListIDPGroupsOptions{ListCursorOptions: github.ListCursorOptions{Page: defVal(cfg.displayName), PerPage: cfg.perPage}})
 	case "team-members-by-slug":
 		x, _, err = svc.ListTeamMembersBySlug(context.Background(), cfg.owner, cfg.slug, &github.TeamListTeamMembersOptions{
 			Role: cfg.role, ListOptions: github.ListOptions{Page: cfg.page, PerPage: cfg.perPage}})

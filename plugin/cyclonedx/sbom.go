@@ -28,7 +28,7 @@ import (
 	"os"
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/sha3"
 )
@@ -86,7 +86,7 @@ func buildToolMetadata(logger zerolog.Logger) (*cdx.Tool, error) {
 	return &cdx.Tool{
 		Vendor:  "Heimdall",
 		Name:    "heimdall",
-		Version: console.Version,
+		Version: cli.Version,
 		Hashes:  &toolHashes,
 		ExternalReferences: &[]cdx.ExternalReference{
 			{

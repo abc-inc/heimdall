@@ -15,11 +15,10 @@
 package test
 
 import (
-	"bytes"
 	"os"
 	"strings"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/cli/go-gh/v2/pkg/jq"
 	"github.com/jfrog/build-info-go/utils"
@@ -36,13 +35,15 @@ func GetRootDir() string {
 }
 
 func Run(jqExpr string, cmd *cobra.Command, args []string) string {
-	out := &bytes.Buffer{}
-	console.Output = out
-	defer func() { console.Output = out }()
+	io, _, out, _ := cli.Test()
+	cli.IO = io
+	defer func() { cli.IO = cli.System() }()
+
 	if jqExpr != "" {
-		console.SetFormat(map[string]any{"output": "json"})
+		cli.SetFormat(map[string]any{"output": "json"})
 	}
 
+	os.Args = args
 	if cmd.RunE != nil {
 		internal.MustNoErr(cmd.RunE(cmd, args))
 	} else {
@@ -55,14 +56,16 @@ func Run(jqExpr string, cmd *cobra.Command, args []string) string {
 }
 
 func RunStdout(jqExpr string, cmd *cobra.Command, args []string) string {
-	oldStdout, newStdout := os.Stdout, internal.Must(os.CreateTemp("", "output"))
-	defer func() { _ = os.Remove(newStdout.Name()) }()
+	ios, _, _, _ := cli.Test()
+	cli.IO = ios
+	defer func() { cli.IO = cli.System() }()
 
-	console.Output, os.Stdout = newStdout, newStdout
-	defer func() { console.Output, os.Stdout = oldStdout, oldStdout }()
+	temp := internal.Must(ios.TempFile(os.TempDir(), "hd-test-stdout.txt"))
+	os.Stdout, ios.Out, ios.ErrOut = temp, temp, temp
+	defer func() { internal.MustNoErr(os.Remove(os.Stdout.Name())) }()
 
 	if jqExpr != "" {
-		console.SetFormat(map[string]any{"output": "json"})
+		cli.SetFormat(map[string]any{"output": "json"})
 	}
 
 	if cmd.RunE != nil {
@@ -71,8 +74,8 @@ func RunStdout(jqExpr string, cmd *cobra.Command, args []string) string {
 		cmd.Run(cmd, args)
 	}
 	if jqExpr != "" {
-		internal.MustNoErr(jq.Evaluate(newStdout, newStdout, jqExpr))
+		internal.MustNoErr(jq.Evaluate(ios.In, ios.Out, jqExpr))
 	}
-	all := internal.Must(os.ReadFile(newStdout.Name()))
-	return strings.Trim(string(all), " \t\r\n")
+
+	return strings.Trim(string(internal.Must(os.ReadFile(temp.Name()))), " \t\r\n")
 }

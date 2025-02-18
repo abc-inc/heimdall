@@ -21,11 +21,11 @@ import (
 	"path"
 	"strings"
 
-	"dario.cat/mergo"
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
+	"github.com/imdario/mergo"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +35,7 @@ type Decoder func(io.Reader) (any, error)
 var Decoders = make(map[string]Decoder)
 
 type parseCfg struct {
-	console.OutCfg
+	cli.OutCfg
 }
 
 func NewParseCmd() *cobra.Command {
@@ -44,7 +44,7 @@ func NewParseCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "parse [flags] <file>...",
 		Short:   "Parse various files formats and process them",
-		GroupID: console.FileGroup,
+		GroupID: cli.FileGroup,
 		Example: heredoc.Doc(`
 			heimdall parse --query sys_id app_svc.json
 			heimdall parse --query libraries.junit.version gradle/libs.versions.toml
@@ -59,13 +59,16 @@ func NewParseCmd() *cobra.Command {
 				internal.MustNoErr(err)
 				i := SplitNamePrefixType(f)
 				internal.MustNoErr(mergo.Map(&m, toAnyMap(v, i.Alias), mergo.WithOverride))
-				// maps.Copy(m, toAnyMap(v, i.Alias))
 			}
-			console.Fmtln(m)
+			if len(args) == 1 && len(m) == 1 && m[""] != nil {
+				cli.Fmtln(m[""])
+			} else {
+				cli.Fmtln(m)
+			}
 		},
 	}
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	cmd.DisableFlagsInUseLine = true
 	return cmd
 }

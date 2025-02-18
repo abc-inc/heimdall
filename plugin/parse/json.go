@@ -24,14 +24,14 @@ import (
 	"reflect"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/spf13/cobra"
 )
 
 type jsonCfg struct {
-	console.OutCfg
+	cli.OutCfg
 }
 
 func NewJSONCmd() *cobra.Command {
@@ -40,7 +40,7 @@ func NewJSONCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "json [flags] <file>...",
 		Short:   "Load JSON files and process them",
-		GroupID: console.FileGroup,
+		GroupID: cli.FileGroup,
 		Example: heredoc.Doc(`
 		`),
 		Args: cobra.MinimumNArgs(1),
@@ -51,19 +51,16 @@ func NewJSONCmd() *cobra.Command {
 				internal.MustNoErr(err)
 				maps.Copy(m, toMap(v, filepath.Base(f)))
 			}
-			console.Fmtln(m)
+			cli.Fmtln(m)
 		},
 	}
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	cmd.DisableFlagsInUseLine = true
 	return cmd
 }
 
 func ReadJSON(r io.Reader) (m any, err error) {
-	if c, ok := r.(io.Closer); ok {
-		defer func() { _ = c.Close() }()
-	}
 	err = json.NewDecoder(r).Decode(&m)
 	return
 }

@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/andygrunwald/go-jira"
@@ -31,7 +31,7 @@ import (
 )
 
 type confluenceCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	token   string
 	baseURL string
 	timeout time.Duration
@@ -53,7 +53,7 @@ func NewConfluenceCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "confluence",
 		Short:       "Query Confluence",
-		GroupID:     console.ServiceGroup,
+		GroupID:     cli.ServiceGroup,
 		Args:        cobra.ExactArgs(0),
 		Annotations: map[string]string{"help:environment": envHelp},
 	}
@@ -70,15 +70,13 @@ func NewConfluenceCmd() *cobra.Command {
 // newClient creates a new Confluence client.
 func newClient(baseURL, token string) (*goconfluence.API, error) {
 	if baseURL == "" || token == "" {
-		return nil, fmt.Errorf("both, url and token must be defined")
+		return nil, fmt.Errorf("CONFLUENCE_API_URL and CONFLUENCE_TOKEN must be defined")
 	}
 	return goconfluence.NewAPI(baseURL, "", token)
 }
 
 func addCommonFlags(cmd *cobra.Command, cfg *confluenceCfg) {
 	cmd.Flags().DurationVarP(&cfg.timeout, "timeout", "T", cfg.timeout, "Set the network timeout in seconds")
-	cmd.Flags().StringVarP(&cfg.baseURL, "url", "u", cfg.baseURL, "Define the Confluence base URL")
-	cmd.Flags().StringVar(&cfg.token, "token", "", "Set the Confluence access token to use")
 }
 
 func readContent(name string) string {

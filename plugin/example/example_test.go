@@ -17,18 +17,16 @@
 package example
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRenderListFilter(t *testing.T) {
-	w := &strings.Builder{}
-	console.Output = w
-	defer console.Reset()
+	io, _, out, _ := cli.Test()
+	cli.IO = io
 
 	render(exampleCfg{name: "*sh*", list: true}, nil, nil)
-	require.Equal(t, "shell\n", w.String())
+	require.Equal(t, "shell\n", out.String())
 }

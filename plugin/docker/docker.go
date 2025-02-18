@@ -17,12 +17,12 @@
 package docker
 
 import (
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/spf13/cobra"
 )
 
 type dockerCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	file        string
 	invertMatch bool
 }
@@ -31,7 +31,7 @@ func NewDockerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "docker <subcommand>",
 		Short:   "Process Docker-related files",
-		GroupID: console.SoftwareGroup,
+		GroupID: cli.SoftwareGroup,
 		Args:    cobra.ExactArgs(0),
 	}
 

@@ -14,16 +14,16 @@
 
 //go:build !no_github
 
-//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v56@v56.0.0/github/code-scanning.go ../../docs
+//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v69@v69.2.0/github/code-scanning.go ../../docs
 
 package github
 
 import (
 	"reflect"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/spf13/cobra"
 )
 
@@ -75,7 +75,7 @@ func NewCodeScanCmd() *cobra.Command {
 		}
 	}
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 

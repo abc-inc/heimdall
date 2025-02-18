@@ -18,23 +18,24 @@ package jira
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"
 )
 
 type jiraCfg struct {
-	console.OutCfg
+	cli.OutCfg
+	apiURL  string
 	token   string
-	baseURL string
 	timeout time.Duration
 	opts    *jira.SearchOptions
 }
 
 const envHelp = `
-JIRA_API_URL  https://jira.company.corp/rest/api/v3
+JIRA_API_URL  https://jira.company.corp/rest/api
 JIRA_TOKEN    <PERSONAL_ACCESS_TOKEN>
 `
 
@@ -42,7 +43,7 @@ func NewJiraCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "jira <subcommand>",
 		Short:       "Query Jira",
-		GroupID:     console.ServiceGroup,
+		GroupID:     cli.ServiceGroup,
 		Args:        cobra.ExactArgs(0),
 		Annotations: map[string]string{"help:environment": envHelp},
 	}
@@ -57,18 +58,16 @@ func NewJiraCmd() *cobra.Command {
 }
 
 // newClient creates a new Jira client.
-func newClient(baseURL, token string) (*jira.Client, error) {
-	if baseURL == "" || token == "" {
-		return nil, fmt.Errorf("both, url and token must be defined")
+func newClient(apiURL, token string) (*jira.Client, error) {
+	if apiURL == "" || token == "" {
+		return nil, fmt.Errorf("JIRA_API_URL and JIRA_TOKEN must be defined")
 	}
 	tp := jira.PATAuthTransport{Token: token}
-	return jira.NewClient(tp.Client(), baseURL)
+	return jira.NewClient(tp.Client(), baseURL(apiURL))
 }
 
 func addCommonFlags(cmd *cobra.Command, cfg *jiraCfg) {
 	cmd.Flags().DurationVarP(&cfg.timeout, "timeout", "T", cfg.timeout, "Set the network timeout in seconds")
-	cmd.Flags().StringVarP(&cfg.baseURL, "url", "u", cfg.baseURL, "Define the Jira base URL")
-	cmd.Flags().StringVar(&cfg.token, "token", "", "Set the Jira access token to use")
 }
 
 func addSearchOpts(cmd *cobra.Command) *jira.SearchOptions {
@@ -79,4 +78,11 @@ func addSearchOpts(cmd *cobra.Command) *jira.SearchOptions {
 	cmd.Flags().StringSliceVar(&opts.Fields, "fields", opts.Fields, "List of fields to return. By default, all fields are returned.")
 	cmd.Flags().StringVar(&opts.ValidateQuery, "validation", opts.ValidateQuery, "Whether to validate and how strictly to treat the validation (strict/warn) (default strict)")
 	return opts
+}
+
+func baseURL(url string) string {
+	url = strings.TrimSuffix(url, "/")
+	url = strings.TrimSuffix(url, "/api")
+	url = strings.TrimSuffix(url, "/rest")
+	return url
 }

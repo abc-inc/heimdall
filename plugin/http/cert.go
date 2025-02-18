@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -34,7 +34,7 @@ import (
 )
 
 type certCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	connectTo    string
 	sni          string
 	startTLS     string
@@ -57,7 +57,7 @@ func NewCertificateCmd() *cobra.Command {
 			cfg.connectTo = args[0]
 			res := verifyIt(cfg)
 			if res != nil {
-				console.Fmtln(res)
+				cli.Fmtln(res)
 				if time.Now().AddDate(0, 0, int(cfg.expiresIn)).After(res.Certificates[0].NotAfter) {
 					os.Exit(2)
 				}
@@ -74,7 +74,7 @@ func NewCertificateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.expectedName, "expected-name", cfg.expectedName, "Name expected in the server TLS certificate. Defaults to name from SNI or, if SNI not overridden, the hostname to connect to.")
 	cmd.Flags().Uint32Var(&cfg.expiresIn, "expires-in", 30, "Exit with status 2 if the certificate will expire within that many days.")
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	cmd.DisableFlagsInUseLine = true
 	return cmd
 }

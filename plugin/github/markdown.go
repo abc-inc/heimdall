@@ -14,14 +14,14 @@
 
 //go:build !no_github
 
-//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v56@v56.0.0/github/markdown.go ../../docs
+//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v69@v69.2.0/github/markdown.go ../../docs
 
 package github
 
 import (
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +33,7 @@ func NewMarkdownCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			md := internal.Must(execMarkdown(cfg, args[0]))
-			_ = internal.Must(console.Msg(md))
+			_ = internal.Must(cli.Msg(md))
 		},
 	}
 

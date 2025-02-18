@@ -1,4 +1,4 @@
-// Copyright 2024 The Heimdall authors
+// Copyright 2025 The Heimdall authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,27 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_cyclonedx
+//go:build !no_uuid
 
-package cyclonedx
+package uuid
 
 import (
+	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/cli"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
-func NewCycloneDXCmd() *cobra.Command {
+func NewUUIDCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "cyclonedx",
-		Short:   "Process CycloneDX SBOM files",
-		GroupID: cli.SoftwareGroup,
-		Args:    cobra.ExactArgs(0),
+		Use:   "uuid",
+		Short: "Generate a Universally Unique Identifier",
+		Example: heredoc.Doc(`
+			heimdall uuid"
+		`),
+		Args: cobra.ExactArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			_, _ = cli.Msg(uuidgen() + "\n")
+		},
 	}
 
-	cmd.AddCommand(
-		NewReadCmd(),
-		NewGoModCmd(),
-	)
-
 	return cmd
+}
+
+func uuidgen() string {
+	return uuid.NewString()
 }

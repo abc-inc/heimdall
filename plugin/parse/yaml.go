@@ -20,7 +20,7 @@ import (
 	"io"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/spf13/cobra"
@@ -29,7 +29,7 @@ import (
 )
 
 type yamlCfg struct {
-	console.OutCfg
+	cli.OutCfg
 }
 
 func NewYAMLCmd() *cobra.Command {
@@ -38,7 +38,7 @@ func NewYAMLCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "yaml [flags] <file>...",
 		Short:   "Load YAML files and process them",
-		GroupID: console.FileGroup,
+		GroupID: cli.FileGroup,
 		Example: heredoc.Doc(`
 			heimdall yaml --query 'to_number("web-app"."-version")' config.yaml"
 		`),
@@ -48,11 +48,11 @@ func NewYAMLCmd() *cobra.Command {
 			for _, f := range args {
 				maps.Copy(m, ProcessYAML(f))
 			}
-			console.Fmtln(m)
+			cli.Fmtln(m)
 		},
 	}
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	cmd.DisableFlagsInUseLine = true
 	return cmd
 }
@@ -66,8 +66,7 @@ func ProcessYAML(name string) (m map[string]any) {
 
 func init() {
 	Decoders["yaml"] = func(r io.Reader) (m any, err error) {
-		d := yaml.NewDecoder(r)
-		err = d.Decode(&m)
+		err = yaml.NewDecoder(r).Decode(&m)
 		return
 	}
 	Decoders["yml"] = Decoders["yaml"]

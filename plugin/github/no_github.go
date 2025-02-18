@@ -1,4 +1,4 @@
-// Copyright 2024 The Heimdall authors
+// Copyright 2025 The Heimdall authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,27 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_cyclonedx
+//go:build no_github
 
-package cyclonedx
-
-import (
-	"github.com/abc-inc/heimdall/cli"
-	"github.com/spf13/cobra"
-)
-
-func NewCycloneDXCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "cyclonedx",
-		Short:   "Process CycloneDX SBOM files",
-		GroupID: cli.SoftwareGroup,
-		Args:    cobra.ExactArgs(0),
-	}
-
-	cmd.AddCommand(
-		NewReadCmd(),
-		NewGoModCmd(),
-	)
-
-	return cmd
-}
+package github

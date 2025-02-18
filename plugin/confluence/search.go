@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -58,9 +58,9 @@ func NewSearchCmd() *cobra.Command {
 			}
 			s := search(cfg)
 			if cfg.limit == 1 && len(s.Results) == 1 {
-				console.Fmtln(s.Results[0])
+				cli.Fmtln(s.Results[0])
 			} else {
-				console.Fmtln(s.Results)
+				cli.Fmtln(s.Results)
 			}
 		},
 	}
@@ -71,7 +71,7 @@ func NewSearchCmd() *cobra.Command {
 	cmd.Flags().IntVar(&cfg.start, "start", cfg.start, "Starting index of the returned list")
 	addCommonFlags(cmd, &cfg.confluenceCfg)
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
 	return cmd
 }

@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/magiconair/properties"
@@ -30,7 +30,7 @@ import (
 )
 
 type propsCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	file    string
 	get     []string
 	set     []string
@@ -44,7 +44,7 @@ func NewPropertiesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "properties [flags] <file>",
 		Short:   "Load a properties file and process it",
-		GroupID: console.FileGroup,
+		GroupID: cli.FileGroup,
 		Example: heredoc.Doc(`
 			heimdall properties --get name,email .git/config
 		`),
@@ -53,7 +53,7 @@ func NewPropertiesCmd() *cobra.Command {
 			if len(args) > 0 {
 				cfg.file = args[0]
 			}
-			console.Fmtln(processProps(cfg))
+			cli.Fmtln(processProps(cfg))
 		},
 	}
 
@@ -63,7 +63,7 @@ func NewPropertiesCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&cfg.sep, "separator", "t", cfg.sep, "Key-value separator")
 	cmd.Flags().StringSliceVarP(&cfg.unset, "unset", "u", nil, "Unset properties matching the key. May be provided multiple times.")
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	cmd.DisableFlagsInUseLine = true
 	return cmd
 }
@@ -163,4 +163,5 @@ func init() {
 		}
 		return m, nil
 	}
+	Decoders["env"] = Decoders["properties"]
 }

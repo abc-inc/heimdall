@@ -22,26 +22,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/abc-inc/heimdall/console"
-	"github.com/abc-inc/heimdall/docs"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
-	"github.com/abc-inc/heimdall/plugin/artifactory"
-	"github.com/abc-inc/heimdall/plugin/confluence"
-	"github.com/abc-inc/heimdall/plugin/cyclonedx"
-	"github.com/abc-inc/heimdall/plugin/docker"
-	"github.com/abc-inc/heimdall/plugin/echo"
-	"github.com/abc-inc/heimdall/plugin/eval"
-	"github.com/abc-inc/heimdall/plugin/example"
-	"github.com/abc-inc/heimdall/plugin/git"
-	"github.com/abc-inc/heimdall/plugin/github"
-	"github.com/abc-inc/heimdall/plugin/golang"
-	"github.com/abc-inc/heimdall/plugin/html"
-	"github.com/abc-inc/heimdall/plugin/interactive"
-	"github.com/abc-inc/heimdall/plugin/java"
-	"github.com/abc-inc/heimdall/plugin/jira"
-	"github.com/abc-inc/heimdall/plugin/keyring"
-	"github.com/abc-inc/heimdall/plugin/parse"
-	"github.com/abc-inc/heimdall/plugin/ssh"
+	_ "github.com/abc-inc/heimdall/plugin/github"
+	"github.com/abc-inc/heimdall/plugin/root"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -53,60 +37,10 @@ import (
 const version = "0.0"
 
 func main() {
-	console.Version = version
+	cli.Version = version
 
-	rootCmd := &cobra.Command{
-		Use:   "heimdall <command>",
-		Short: "Perform compliance checks and report evidences",
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			console.SetFormat(map[string]any{
-				"jq":     cmd.Flag("jq"),
-				"output": cmd.Flag("output"),
-				"pretty": cmd.Flag("pretty"),
-				"query":  cmd.Flag("query")},
-			)
-		},
-	}
-
-	rootCmd.AddGroup(
-		&cobra.Group{ID: console.FileGroup, Title: console.FileGroup + ":"},
-		&cobra.Group{ID: console.HeimdallGroup, Title: console.HeimdallGroup + ":"},
-		&cobra.Group{ID: console.MiscGroup, Title: console.MiscGroup + ":"},
-		&cobra.Group{ID: console.ServiceGroup, Title: console.ServiceGroup + ":"},
-		&cobra.Group{ID: console.SoftwareGroup, Title: console.SoftwareGroup + ":"},
-	)
-
-	rootCmd.AddCommand(
-		artifactory.NewArtifactoryCmd(),
-		confluence.NewConfluenceCmd(),
-		cyclonedx.NewCycloneDXCmd(),
-		docker.NewDockerCmd(),
-		echo.NewEchoCmd(),
-		example.NewExampleCmd(),
-		eval.NewEvalCmd(),
-		git.NewGitCmd(),
-		github.NewGitHubCmd(),
-		golang.NewGoCmd(),
-		html.NewHTMLCmd(),
-		interactive.NewInteractiveCmd(),
-		java.NewJavaCmd(),
-		jira.NewJiraCmd(),
-		keyring.NewKeyringCmd(),
-		parse.NewParseCmd(),
-		ssh.NewSSHCmd(),
-		versionCmd(),
-	)
-
-	for _, t := range docs.Topics {
-		rootCmd.AddCommand(docs.NewHelpTopicCmd(t))
-	}
-
-	rootCmd.SetHelpFunc(console.RootHelpFunc)
-
-	cfgDir := filepath.Join(internal.Must(os.UserConfigDir()), "heimdall")
-	rootCmd.PersistentFlags().String("config", cfgDir, "Location of the Heimdall config directory")
-	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error, fatal)")
-
+	rootCmd := root.GetRootCmd()
+	rootCmd.AddCommand(versionCmd())
 	cobra.OnInitialize(func() { initConfig(rootCmd) })
 
 	if strings.Contains(os.Args[0], "___go_build_") {
@@ -144,8 +78,8 @@ func initConfig(rootCmd *cobra.Command) {
 
 	// Import existing environment variables.
 	envPrefix := "HEIMDALL"
-	var envRepl = make([]string, 2*len(console.StyleProps))
-	for i, p := range console.StyleProps {
+	var envRepl = make([]string, 2*len(cli.StyleProps))
+	for i, p := range cli.StyleProps {
 		if envRepl[2*i] == "" {
 			envRepl[2*i], envRepl[2*i+1] = envPrefix+"_"+strings.ReplaceAll(p, "_", "-"), p
 		}
@@ -194,7 +128,7 @@ func versionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "version",
 		Short:   "Show Heimdall version",
-		GroupID: console.HeimdallGroup,
+		GroupID: cli.HeimdallGroup,
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			t, rev := "", ""
@@ -209,9 +143,9 @@ func versionCmd() *cobra.Command {
 			}
 
 			if len(rev) > 10 {
-				_, _ = console.Msg(fmt.Sprintf("Heimdall version %s (Git commit: %s, Date: %s)\n", version, rev[0:10], t))
+				_, _ = cli.Msg(fmt.Sprintf("Heimdall version %s (Git commit: %s, Date: %s)\n", version, rev[0:10], t))
 			} else {
-				_, _ = console.Msg(fmt.Sprintf("Heimdall version %s\n", version))
+				_, _ = cli.Msg(fmt.Sprintf("Heimdall version %s\n", version))
 			}
 		},
 	}

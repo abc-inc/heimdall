@@ -23,13 +23,13 @@ import (
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/spf13/cobra"
 )
 
 type readCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	name   string
 	format string
 	pretty bool
@@ -53,7 +53,7 @@ func NewReadCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.format, "format", cfg.format, "Target format of the SBOM file (xml or json)")
 	cmd.Flags().BoolVar(&cfg.pretty, "pretty", cfg.pretty, "Pretty print the SBOM")
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 
@@ -69,12 +69,12 @@ func readBom(cfg readCfg) (b cdx.BOM) {
 	internal.MustNoErr(d.Decode(&b))
 
 	if cfg.format == "json" {
-		internal.MustNoErr(cdx.NewBOMEncoder(console.Output, cdx.BOMFileFormatJSON).SetPretty(cfg.pretty).EncodeVersion(&b, b.SpecVersion))
+		internal.MustNoErr(cdx.NewBOMEncoder(cli.IO.Out, cdx.BOMFileFormatJSON).SetPretty(cfg.pretty).EncodeVersion(&b, b.SpecVersion))
 	} else {
-		internal.MustNoErr(cdx.NewBOMEncoder(console.Output, cdx.BOMFileFormatXML).SetPretty(cfg.pretty).EncodeVersion(&b, b.SpecVersion))
+		internal.MustNoErr(cdx.NewBOMEncoder(cli.IO.Out, cdx.BOMFileFormatXML).SetPretty(cfg.pretty).EncodeVersion(&b, b.SpecVersion))
 	}
 	if !cfg.pretty {
-		_ = internal.Must(console.Msg("\n"))
+		_ = internal.Must(cli.Msg("\n"))
 	}
 
 	return

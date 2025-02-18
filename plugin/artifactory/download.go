@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_artifactory
+//go:build !no_jfrog && !no_artifactory
 
 package artifactory
 
 import (
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/jfrog/build-info-go/entities"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
@@ -27,7 +27,7 @@ import (
 )
 
 type downloadCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	pattern string
 	target  string
 	explode bool
@@ -41,7 +41,7 @@ func NewDownloadCmd() *cobra.Command {
 		Short: "Download files from Artifactory",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(download(cfg))
+			cli.Fmtln(download(cfg))
 		},
 	}
 
@@ -50,7 +50,7 @@ func NewDownloadCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&cfg.pattern, "pattern", "p", cfg.pattern, "Download only assets that match a glob pattern")
 	cmd.Flags().StringVarP(&cfg.target, "target", "t", cfg.target, "Target path")
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("pattern"))
 	return cmd
 }

@@ -25,7 +25,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/spf13/cobra"
@@ -44,7 +44,7 @@ func NewExampleCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "example [<name>]",
 		Short:   "Print examples and detailed information",
-		GroupID: console.HeimdallGroup,
+		GroupID: cli.HeimdallGroup,
 		Example: heredoc.Doc(`
 			heimdall example java
 		`),
@@ -78,7 +78,7 @@ func render(cfg exampleCfg, cmd *cobra.Command, args []string) {
 	} else if cfg.list {
 		for i := range es {
 			es[i] = filepath.Base(strings.TrimSuffix(es[i], filepath.Ext(es[i])))
-			_ = internal.Must(console.Msg(es[i] + "\n"))
+			_ = internal.Must(cli.Msg(es[i] + "\n"))
 		}
 		return
 	}

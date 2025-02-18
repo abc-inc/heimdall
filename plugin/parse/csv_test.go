@@ -12,27 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_cyclonedx
+//go:build !no_parse && !no_csv
 
-package cyclonedx
+package parse
 
 import (
-	"github.com/abc-inc/heimdall/cli"
-	"github.com/spf13/cobra"
+	"io"
+	"path/filepath"
+	"testing"
+
+	"github.com/abc-inc/heimdall/internal"
+	"github.com/abc-inc/heimdall/res"
+	"github.com/abc-inc/heimdall/test"
+	"github.com/stretchr/testify/require"
 )
 
-func NewCycloneDXCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "cyclonedx",
-		Short:   "Process CycloneDX SBOM files",
-		GroupID: cli.SoftwareGroup,
-		Args:    cobra.ExactArgs(0),
-	}
-
-	cmd.AddCommand(
-		NewReadCmd(),
-		NewGoModCmd(),
-	)
-
-	return cmd
+func TestDecodeCSV(t *testing.T) {
+	r := internal.Must(res.Open(filepath.Join(test.GetRootDir(), "testdata", "jacoco.csv")))
+	defer func(r io.ReadCloser) { _ = r.Close() }(r)
+	csv := internal.Must(decodeCSVRecords(r)).([][]string)
+	require.Equal(t, "METHOD_COVERED", csv[0][12])
+	require.Equal(t, 300, len(csv))
 }

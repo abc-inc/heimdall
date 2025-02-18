@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/jfrog/gofrog/io"
@@ -37,14 +37,14 @@ func NewContextCmd() *cobra.Command {
 		Short: "Parse a .dockerignore file and list matching files",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(listMatches(cfg))
+			cli.Fmtln(listMatches(cfg))
 		},
 	}
 
 	cmd.Flags().BoolVarP(&cfg.invertMatch, "invert-match", "v", cfg.invertMatch, "Selected files are those matching any of the specified patterns")
 
-	console.AddFileFlag(cmd, &cfg.file, "Path to the .dockerignore file", console.Optional)
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddFileFlag(cmd, &cfg.file, "Path to the .dockerignore file", cli.Optional)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 

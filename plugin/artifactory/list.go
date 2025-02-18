@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_artifactory
+//go:build !no_jfrog && !no_artifactory
 
 package artifactory
 
@@ -20,7 +20,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/jfrog/jfrog-client-go/artifactory/services"
 	"github.com/jfrog/jfrog-client-go/artifactory/services/utils"
@@ -29,7 +29,7 @@ import (
 )
 
 type listCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	pattern string
 }
 
@@ -40,13 +40,13 @@ func NewListCmd() *cobra.Command {
 		Short: "List artifacts in Artifactory",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(find(cfg))
+			cli.Fmtln(find(cfg))
 		},
 	}
 
 	cmd.Flags().StringVarP(&cfg.pattern, "pattern", "p", cfg.pattern, "List only assets that match a pattern")
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("pattern"))
 	return cmd
 }

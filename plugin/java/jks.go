@@ -22,7 +22,7 @@ import (
 	"os"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
@@ -33,7 +33,7 @@ import (
 type Entry any
 
 type keystoreCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	file     string
 	password []byte
 }
@@ -57,12 +57,12 @@ func NewKeystoreCmd() *cobra.Command {
 		Args:        cobra.ExactArgs(0),
 		Annotations: map[string]string{"help:environment": envHelp},
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(listEntries(cfg))
+			cli.Fmtln(listEntries(cfg))
 		},
 	}
 
-	console.AddFileFlag(cmd, &cfg.file, "Path to the keystore file")
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddFileFlag(cmd, &cfg.file, "Path to the keystore file")
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 

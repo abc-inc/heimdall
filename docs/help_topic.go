@@ -16,6 +16,7 @@ package docs
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -31,7 +32,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 )
 
 type Topic struct {
@@ -115,8 +115,7 @@ func MustStyle(n string) string {
 	s := styles.Get(n)
 	if s == styles.Fallback {
 		ns := maps.Keys(styles.Registry)
-		slices.Sort(ns)
-		internal.MustOkMsgf(n, s != styles.Fallback, "Style '%s' does not exist. Valid styles are: %s", n, strings.Join(ns, " "))
+		internal.MustOkMsgf(n, s != styles.Fallback, "Style '%s' does not exist. Valid styles are: %s", n, strings.Join(slices.Sorted(ns), " "))
 	}
 	return n
 }

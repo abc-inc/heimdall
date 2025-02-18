@@ -21,7 +21,7 @@ import (
 	"maps"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/clbanning/mxj/v2"
@@ -29,7 +29,7 @@ import (
 )
 
 type xmlCfg struct {
-	console.OutCfg
+	cli.OutCfg
 }
 
 func NewXMLCmd() *cobra.Command {
@@ -38,7 +38,7 @@ func NewXMLCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "xml [flags] <file>...",
 		Short:   "Load XML files and process them",
-		GroupID: console.FileGroup,
+		GroupID: cli.FileGroup,
 		Example: heredoc.Doc(`
 			heimdall xml --query 'to_number("web-app"."-version")' WEB-INF/web.xml"
 		`),
@@ -48,11 +48,11 @@ func NewXMLCmd() *cobra.Command {
 			for _, f := range args {
 				maps.Copy(m, processXML(f))
 			}
-			console.Fmtln(m)
+			cli.Fmtln(m)
 		},
 	}
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	cmd.DisableFlagsInUseLine = true
 	return cmd
 }

@@ -17,19 +17,18 @@
 package java
 
 import (
-	"path/filepath"
-	"strings"
+	"os"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/joshdk/go-junit"
 	"github.com/spf13/cobra"
 )
 
 type junitCfg struct {
-	console.OutCfg
-	file       string
+	cli.OutCfg
+	files      []string
 	summary    bool
 	withOutput bool
 }
@@ -40,24 +39,24 @@ func NewJUnitCmd() *cobra.Command {
 		Use:   "junit",
 		Short: "Parse and aggregate JUnit test reports",
 		Example: heredoc.Doc(`
-			heimdall java junit -f "reports/TEST-*.xml" --summary --output text --jq ".[] | .totals.passed / .totals.tests"
+			heimdall java junit --summary --output text --jq ".[] | .totals.passed / .totals.tests" reports/TEST-*.xml
 		`),
-		Args: cobra.ExactArgs(0),
+		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(readJUnit(cfg))
+			cfg.files = args
+			cli.Fmtln(readJUnit(cfg))
 		},
 	}
 
 	cmd.Flags().BoolVarP(&cfg.summary, "summary", "s", false, "Aggregate the report")
 	cmd.Flags().BoolVar(&cfg.withOutput, "include-output", false, "Include standard output and standard error")
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
-	console.AddFileFlag(cmd, &cfg.file, "Path to the JUnit report directory or file")
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 
 func readJUnit(cfg junitCfg) []junit.Suite {
-	ss := loadSuites(cfg.file)
+	ss := loadSuites(cfg.files)
 	if cfg.summary {
 		ss = []junit.Suite{{Suites: ss}}
 		ss[0].Aggregate()
@@ -71,14 +70,16 @@ func readJUnit(cfg junitCfg) []junit.Suite {
 	return ss
 }
 
-// loadSuites recursively loads all files in the given directory, recursively.
-// If a globing pattern is used, then it ingests only the matching files.
-func loadSuites(dir string) []junit.Suite {
-	if !strings.ContainsRune(dir, '*') {
-		return internal.Must(junit.IngestDir(dir))
+// loadSuites loads all files, and files in the given directories, recursively.
+func loadSuites(names []string) (ss []junit.Suite) {
+	for _, n := range names {
+		if stat := internal.Must(os.Stat(n)); stat.IsDir() {
+			ss = append(ss, internal.Must(junit.IngestDir(n))...)
+		} else {
+			ss = append(ss, internal.Must(junit.IngestFile(n))...)
+		}
 	}
-	fs := internal.Must(filepath.Glob(dir))
-	return internal.Must(junit.IngestFiles(fs))
+	return
 }
 
 func removeOutput(s *junit.Suite) {

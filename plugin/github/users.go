@@ -14,7 +14,7 @@
 
 //go:build !no_github
 
-//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v56@v56.0.0/github/users\*.go ../../docs
+//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v69@v69.2.0/github/users\*.go ../../docs
 
 package github
 
@@ -22,8 +22,8 @@ import (
 	"reflect"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
-	"github.com/google/go-github/v56/github"
+	"github.com/abc-inc/heimdall/cli"
+	"github.com/google/go-github/v69/github"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +46,7 @@ func NewUsersCmd() *cobra.Command {
 	svcTyp := reflect.TypeOf(&github.UsersService{})
 	cmd.AddCommand(createCmds(cfg, svcTyp, execUsers, ops)...)
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 

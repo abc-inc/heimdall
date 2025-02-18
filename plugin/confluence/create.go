@@ -21,7 +21,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -48,7 +48,7 @@ func NewCreateCmd() *cobra.Command {
 				goconfluence.SetDebug(true)
 			}
 			cfg.file = args[0]
-			console.Fmtln(create(cfg))
+			cli.Fmtln(create(cfg))
 		},
 	}
 
@@ -57,7 +57,7 @@ func NewCreateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.title, "title", cfg.title, "Title of the page")
 	addCommonFlags(cmd, &cfg.confluenceCfg)
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
 	internal.MustNoErr(cmd.MarkFlagRequired("title"))
 	return cmd

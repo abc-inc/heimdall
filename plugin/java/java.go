@@ -29,7 +29,6 @@ func NewJavaCmd() *cobra.Command {
 		NewJaCoCoCmd(),
 		NewJUnitCmd(),
 		NewKeystoreCmd(),
-		NewLog4jCmd(),
 		NewWebXMLCmd(),
 	)
 

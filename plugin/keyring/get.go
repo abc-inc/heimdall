@@ -19,7 +19,7 @@ package keyring
 import (
 	"os"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -33,9 +33,9 @@ func NewGetCmd() *cobra.Command {
 		Short: "Retrieve secrets from the system keyring",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			_ = internal.Must(console.Msg(get(cfg)))
+			_ = internal.Must(cli.Msg(get(cfg)))
 			if isatty.IsTerminal(os.Stdout.Fd()) {
-				_ = internal.Must(console.Msg("\n"))
+				_ = internal.Must(cli.Msg("\n"))
 			}
 		},
 	}

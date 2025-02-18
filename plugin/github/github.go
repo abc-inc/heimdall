@@ -29,9 +29,10 @@ import (
 
 	"github.com/abc-inc/goava/base/casefmt"
 	"github.com/abc-inc/heimdall"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
-	"github.com/google/go-github/v56/github"
+	"github.com/abc-inc/heimdall/plugin/root"
+	"github.com/google/go-github/v69/github"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
@@ -101,7 +102,7 @@ type ghCfg struct {
 	// Enterprise
 	enterprise string
 	// Output
-	console.OutCfg
+	cli.OutCfg
 }
 
 func newGHCfg() *ghCfg {
@@ -131,7 +132,7 @@ func NewGitHubCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "github <subcommand>",
 		Short:       "Query information from GitHub",
-		GroupID:     console.ServiceGroup,
+		GroupID:     cli.ServiceGroup,
 		Args:        cobra.ExactArgs(0),
 		Annotations: map[string]string{"help:environment": envHelp},
 	}
@@ -149,6 +150,10 @@ func NewGitHubCmd() *cobra.Command {
 	)
 
 	return cmd
+}
+
+func init() {
+	root.GetRootCmd().AddCommand(NewGitHubCmd())
 }
 
 func addRepoFlags(cfg *ghCfg, cmd *cobra.Command) {
@@ -229,7 +234,7 @@ func createCmds(cfg *ghCfg, svcTyp reflect.Type, inv Inv, list []string) (cmds [
 			ok := slices.Contains(list, name)
 			internal.MustOkMsgf(ok, ok, "cannot find handler for '%s' '%s'", svcTyp, name)
 
-			p := path.Join("docs", "github.com", "google", "go-github", "v56@v56.0.0", "github", svcTyp.Elem().Name(), m.Name+".txt")
+			p := path.Join("docs", "github.com", "google", "go-github", "v69@v69.2.0", "github", svcTyp.Elem().Name(), m.Name+".txt")
 			desc := string(internal.Must(heimdall.StaticFS.ReadFile(p)))
 			_, desc, _ = strings.Cut(desc, " ")
 			desc = string(unicode.ToUpper(rune(desc[0]))) + desc[1:]
@@ -260,7 +265,7 @@ func createCmds(cfg *ghCfg, svcTyp reflect.Type, inv Inv, list []string) (cmds [
 					} else if err != nil {
 						log.Err(err).Send()
 					} else {
-						console.Fmtln(a)
+						cli.Fmtln(a)
 					}
 				},
 			})

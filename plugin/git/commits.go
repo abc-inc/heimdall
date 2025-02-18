@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/go-git/go-git/v5"
@@ -35,7 +35,7 @@ import (
 )
 
 type gitCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	repo      string
 	user      string
 	pass      string
@@ -70,7 +70,7 @@ func NewCommitsCmd() *cobra.Command {
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(listCommits(cfg))
+			cli.Fmtln(listCommits(cfg))
 		},
 	}
 
@@ -78,7 +78,7 @@ func NewCommitsCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.endRef, "end-ref", cfg.endRef, "Last revision to include")
 	cmd.Flags().BoolVar(&cfg.mergeBase, "merge-base", cfg.mergeBase, `Use the merge base of the two commits for the "start" side`)
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("start-ref"))
 	cmd.DisableFlagsInUseLine = true
 	return cmd

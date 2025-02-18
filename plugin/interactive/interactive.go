@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_interactive
+//go:build !interactive
 
 package interactive
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/alecthomas/chroma/lexers/b"
 	"github.com/alecthomas/chroma/lexers/y"
@@ -48,7 +49,7 @@ func NewInteractiveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "interactive [<args>]",
 		Short:   "Interactive CLI builder",
-		GroupID: console.HeimdallGroup,
+		GroupID: cli.HeimdallGroup,
 		Args:    cobra.MaximumNArgs(100),
 		Run: func(cmd *cobra.Command, args []string) {
 			draw(cmd.Root(), args...)
@@ -407,24 +408,25 @@ func highlight(str string) string {
 }
 
 func execSimple(cmd *cobra.Command) string {
-	console.Output = &strings.Builder{}
-	defer func() { console.Output = os.Stdout }()
+	var out *bytes.Buffer
+	cli.IO, _, out, _ = cli.Test()
+	defer func() { cli.IO.Out = os.Stdout }()
 	if err := cmd.Execute(); err != nil {
-		_, _ = console.Output.Write([]byte(err.Error()))
+		_, _ = out.WriteString(err.Error())
 	}
-	return console.Output.(*strings.Builder).String()
+	return out.String()
 }
 
 func execANSI(cmd *cobra.Command) string {
 	stdout, stderr := os.Stdout, os.Stderr
 	r, w, err := os.Pipe()
 	internal.MustNoErr(err)
-	defer func() { _, os.Stdout, os.Stderr, console.Output = r.Close(), stdout, stderr, stdout }()
+	defer func() { _, os.Stdout, os.Stderr, cli.IO.Out = r.Close(), stdout, stderr, stdout }()
 	os.Stdout, os.Stderr = w, w
-	console.Output = w
+	cli.IO.Out = w
 
 	if err = cmd.Execute(); err != nil {
-		_, _ = console.Output.Write([]byte(err.Error()))
+		_, _ = cli.IO.Out.Write([]byte(err.Error()))
 	}
 	internal.MustNoErr(w.Close())
 	bs, _ := io.ReadAll(r)

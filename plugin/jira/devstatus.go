@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"
@@ -35,7 +35,7 @@ type jiraDevStatusCfg struct {
 }
 
 func NewDevStatusCmd() *cobra.Command {
-	cfg := jiraDevStatusCfg{jiraCfg: jiraCfg{baseURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
+	cfg := jiraDevStatusCfg{jiraCfg: jiraCfg{apiURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
 	cmd := &cobra.Command{
 		Use:   "dev-status",
 		Short: "Get details about the development status.",
@@ -48,14 +48,14 @@ func NewDevStatusCmd() *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient(cfg.baseURL, cfg.token)
+			client, err := newClient(cfg.apiURL, cfg.token)
 			if err != nil {
 				return err
 			}
 
 			vs, _, err := getDetails(client, cfg)
 			if err == nil {
-				console.Fmtln(vs)
+				cli.Fmtln(vs)
 			}
 			return err
 		},
@@ -64,7 +64,7 @@ func NewDevStatusCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&cfg.issueID, "issue-id", "i", cfg.issueID, "ID of the Jira issue")
 	addCommonFlags(cmd, &cfg.jiraCfg)
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("issue-id"))
 	return cmd
 }

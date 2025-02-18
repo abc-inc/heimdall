@@ -20,12 +20,11 @@ import (
 	"encoding/csv"
 	"errors"
 	"io"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/rs/zerolog/log"
@@ -49,7 +48,7 @@ type CovRec struct {
 }
 
 type jaCoCoCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	files   []string
 	exclude string
 	summary bool
@@ -73,16 +72,16 @@ func NewJaCoCoCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&cfg.summary, "summary", "s", false, "Aggregate the report")
 	cmd.Flags().StringVarP(&cfg.exclude, "exclude", "x", "generated", "Packages to exclude")
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 
 func printJaCoCo(cfg jaCoCoCfg) {
 	crs := processJaCoCo(cfg)
 	if cfg.summary && len(crs) == 1 {
-		console.Fmtln(crs[0])
+		cli.Fmtln(crs[0])
 	} else {
-		console.Fmtln(crs)
+		cli.Fmtln(crs)
 	}
 }
 
@@ -95,13 +94,7 @@ func processJaCoCo(cfg jaCoCoCfg) (crs []CovRec) {
 	}
 
 	for _, p := range cfg.files {
-		if res.IsURL(p) {
-			crs = append(crs, loadJaCoCoCSV(p, test)...)
-			continue
-		}
-		for _, f := range internal.Must(filepath.Glob(p)) {
-			crs = append(crs, loadJaCoCoCSV(f, test)...)
-		}
+		crs = append(crs, loadJaCoCoCSV(p, test)...)
 	}
 	if len(crs) == 0 {
 		log.Fatal().Strs("files", cfg.files).Msg("Cannot load JaCoCo report or files do not contain any matching lines")

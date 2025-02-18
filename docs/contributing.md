@@ -5,7 +5,7 @@
 At a high level, these areas make up the `github.com/abc-inc/heimdall` project:
 
 - [`cmd/`](../cmd) - `main` packages for building the `heimdall` executable
-- [`console/`](../console) - most other CLI code, including different output formats and the REPL
+- [`cli/`](../cli) - most other CLI code, including different output formats and the REPL
 - [`docs/`](../docs) - documentation for maintainers and contributors
 - [`plugin/`](../plugin) - contains sub-commands
 - [`res`](../res) - provides utilities for all kinds of file operations

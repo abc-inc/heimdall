@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/spf13/cobra"
@@ -29,7 +29,7 @@ import (
 )
 
 type modCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	file string
 }
 
@@ -43,12 +43,12 @@ func NewModCmd() *cobra.Command {
 		`),
 		Args: cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(readMod(cfg))
+			cli.Fmtln(readMod(cfg))
 		},
 	}
 
-	console.AddFileFlag(cmd, &cfg.file, "Path to the the go.mod file", console.Optional)
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddFileFlag(cmd, &cfg.file, "Path to the the go.mod file", cli.Optional)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 

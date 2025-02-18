@@ -26,7 +26,7 @@ import (
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/plugin/parse"
 	"github.com/abc-inc/heimdall/res"
@@ -103,7 +103,7 @@ func NewEvalCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&cfg.quiet, "quiet", false, "Enable quiet mode (suppress normal output)")
 	cmd.Flags().BoolVarP(&cfg.verbose, "verbose", "v", false, "Enable verbose mode")
 
-	console.AddOutputFlag(cmd, &cfg.output)
+	cli.AddOutputFlag(cmd, &cfg.output)
 	internal.MustNoErr(cmd.MarkFlagRequired("expression"))
 	return cmd
 }
@@ -132,16 +132,16 @@ func eval(cfg evalCfg, args []string) {
 		for _, r := range result {
 			if cfg.template != "" {
 				if i, convIntErr := strconv.Atoi(r); convIntErr == nil {
-					internal.MustNoErr(tmpl.Execute(console.Output, i))
+					internal.MustNoErr(tmpl.Execute(cli.IO.Out, i))
 				} else if f, convFloatErr := strconv.ParseFloat(r, 64); convFloatErr == nil {
-					internal.MustNoErr(tmpl.Execute(console.Output, f))
+					internal.MustNoErr(tmpl.Execute(cli.IO.Out, f))
 				} else if b, convBoolErr := strconv.ParseBool(r); convBoolErr == nil {
-					internal.MustNoErr(tmpl.Execute(console.Output, b))
+					internal.MustNoErr(tmpl.Execute(cli.IO.Out, b))
 				} else {
-					internal.MustNoErr(tmpl.Execute(console.Output, r))
+					internal.MustNoErr(tmpl.Execute(cli.IO.Out, r))
 				}
 			} else {
-				console.Fmtln(r)
+				cli.Fmtln(r)
 			}
 		}
 	}

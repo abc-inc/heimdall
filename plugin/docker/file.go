@@ -20,7 +20,7 @@ import (
 	"io"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
@@ -37,12 +37,12 @@ func NewFileCmd() *cobra.Command {
 		`),
 		Args: cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			console.Fmtln(readDockerfile(cfg))
+			cli.Fmtln(readDockerfile(cfg))
 		},
 	}
 
-	console.AddFileFlag(cmd, &cfg.file, "Path to the Dockerfile", console.Optional)
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddFileFlag(cmd, &cfg.file, "Path to the Dockerfile", cli.Optional)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 

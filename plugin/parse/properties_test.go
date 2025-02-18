@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/test"
 	"github.com/stretchr/testify/require"
 )
@@ -41,16 +41,16 @@ func TestProcessProps(t *testing.T) {
 		exp  string
 	}{
 		{name: "getWithComment", cfg: propsCfg{file: f, get: []string{"distributionBase"}, set: nil,
-			unset: nil, sep: "", comment: "# ", OutCfg: console.OutCfg{Output: "text"}}, exp: "GRADLE_USER_HOME"},
+			unset: nil, sep: "", comment: "# ", OutCfg: cli.OutCfg{Output: "text"}}, exp: "GRADLE_USER_HOME"},
 		{name: "setNewWithSep", cfg: propsCfg{file: f, get: []string{"a"}, set: []string{"a:b"},
-			unset: nil, sep: ":", comment: "", OutCfg: console.OutCfg{Output: "text"}}, exp: "b"},
+			unset: nil, sep: ":", comment: "", OutCfg: cli.OutCfg{Output: "text"}}, exp: "b"},
 		{name: "setMultiple", cfg: propsCfg{file: f, get: nil, set: []string{"distributionBase=/gradle", "zipstoreBase=/gradle"},
-			unset: []string{"distributionPath", "distributionUrl", "zipStorePath"}, sep: "", comment: "# ", OutCfg: console.OutCfg{Output: "text"}}, exp: gradleExp},
+			unset: []string{"distributionPath", "distributionUrl", "zipStorePath"}, sep: "", comment: "# ", OutCfg: cli.OutCfg{Output: "text"}}, exp: gradleExp},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			console.SetFormat(map[string]any{"output": tt.cfg.Output})
+			cli.SetFormat(map[string]any{"output": tt.cfg.Output})
 			require.Equal(t, tt.exp, strings.Join(processProps(tt.cfg).([]string), "\n"))
 		})
 	}

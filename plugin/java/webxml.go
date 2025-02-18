@@ -19,7 +19,7 @@ package java
 import (
 	"slices"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/plugin/parse"
 	"github.com/clbanning/mxj/v2"
@@ -29,7 +29,7 @@ import (
 )
 
 type webXMLCfg struct {
-	console.OutCfg
+	cli.OutCfg
 	mode string
 }
 
@@ -42,13 +42,13 @@ func NewWebXMLCmd() *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := processWebXML(cfg, args[0])
-			console.Fmtln(app)
+			cli.Fmtln(app)
 		},
 	}
 
 	cmd.Flags().StringVar(&cfg.mode, "mode", cfg.mode, `Output mode ("raw", "servlet-mappings")`)
 
-	console.AddOutputFlags(cmd, &cfg.OutCfg)
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	return cmd
 }
 

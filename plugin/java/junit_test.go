@@ -26,7 +26,7 @@ import (
 
 func TestReadJUnit(t *testing.T) {
 	f := filepath.Join(test.GetRootDir(), "testdata", "TEST-com.example.project.CalculatorTests.xml")
-	cfg := junitCfg{file: f, summary: true, withOutput: false}
+	cfg := junitCfg{files: []string{f}, summary: true, withOutput: false}
 
 	ss := readJUnit(cfg)
 	require.Equal(t, 1, len(ss))

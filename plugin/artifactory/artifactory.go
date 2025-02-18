@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_artifactory
+//go:build !no_jfrog && !no_artifactory
 
 package artifactory
 
 import (
 	"os"
 
-	"github.com/abc-inc/heimdall/console"
+	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/jfrog/jfrog-client-go/artifactory"
 	"github.com/jfrog/jfrog-client-go/artifactory/auth"
@@ -37,7 +37,7 @@ func NewArtifactoryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "artifactory <subcommand>",
 		Short:       "Various Artifactory-related commands",
-		GroupID:     console.ServiceGroup,
+		GroupID:     cli.ServiceGroup,
 		Args:        cobra.ExactArgs(0),
 		Annotations: map[string]string{"help:environment": envHelp},
 	}
