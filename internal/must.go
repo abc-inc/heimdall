@@ -37,7 +37,7 @@ func MustNoErr(err error) {
 		if zerolog.GlobalLevel() == zerolog.TraceLevel {
 			panic(err)
 		}
-		log.Fatal().Err(err).Str("type", reflect.TypeOf(err).String()).Send()
+		log.Fatal().AnErr("ERROR", err).Str("type", reflect.TypeOf(err).String()).Send()
 	}
 }
 

@@ -46,7 +46,14 @@ func init() {
 
 func Fmt(a any) {
 	if _, err := getWriter().Write(a); err != nil {
-		log.Fatal().Err(err).Msg("Cannot write output")
+		defer func() {
+			// Sometimes it is not possible to log an error by gojq (see gojq.TypeOf).
+			// In this case, the message is logged without error.
+			if r := recover(); r != nil {
+				log.Fatal().Msg("Cannot write output")
+			}
+		}()
+		log.Fatal().AnErr(ErrKey, err).Msg("Cannot write output")
 	}
 }
 
@@ -100,24 +107,24 @@ func getWriter() gfmt.Writer {
 		return writer
 	}
 
-	t, q, _ := strings.Cut(options["output"], ":")
+	t, p, _ := strings.Cut(options["output"], ":")
 	switch t {
 	case "csv":
 		writer = gfmt.NewText(IO.Out)
 		writer.(*gfmt.Text).Sep = ","
 	case "", "json":
 		if options["pretty"] == "true" {
-			writer = gfmt.NewJSON(IO.Out, gfmt.WithPretty())
+			writer = gfmt.NewJSON(IO.Out, gfmt.WithPretty[gfmt.JSON]())
 		} else {
 			writer = gfmt.NewJSON(IO.Out)
 		}
 	case "table":
 		writer = gfmt.NewTab(IO.Out)
 	case "template":
-		tmpl := internal.Must(template.New("output").Parse(q)).Funcs(sprig.HermeticTxtFuncMap())
+		tmpl := internal.Must(template.New("output").Parse(p)).Funcs(sprig.HermeticTxtFuncMap())
 		writer = gfmt.NewTemplate(IO.Out, tmpl)
 	case "template-file":
-		r := internal.Must(res.Open(q))
+		r := internal.Must(res.Open(p))
 		defer func() { _ = r.Close() }()
 		pat := string(internal.Must(io.ReadAll(r)))
 		tmpl := internal.Must(template.New("output").Parse(pat)).Funcs(sprig.HermeticTxtFuncMap())
@@ -130,7 +137,7 @@ func getWriter() gfmt.Writer {
 		writer.(*gfmt.Text).Sep = "\t"
 	case "yaml":
 		if options["pretty"] == "true" {
-			writer = gfmt.NewYAML(IO.Out, gfmt.WithPretty())
+			writer = gfmt.NewYAML(IO.Out, gfmt.WithPretty[gfmt.YAML]())
 		} else {
 			writer = gfmt.NewYAML(IO.Out)
 		}
@@ -142,7 +149,11 @@ func getWriter() gfmt.Writer {
 	if q := options["query"]; q != "" {
 		writer = gfmt.NewJMESPath(writer, q)
 	} else if q = options["jq"]; q != "" {
-		writer = gfmt.NewJQ(writer, q)
+		if _, ok := writer.(*gfmt.Text); ok {
+			writer = gfmt.NewJQ(writer, q, gfmt.WithRaw())
+		} else {
+			writer = gfmt.NewJQ(writer, q)
+		}
 	}
 
 	return writer

@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/abc-inc/goava v0.0.0-20221112121716-7272a4325174
-	github.com/abc-inc/gutenfmt v0.2.0
+	github.com/abc-inc/gutenfmt v0.4.0
 	github.com/alecthomas/chroma/v2 v2.15.0
 	github.com/alessio/shellescape v1.4.2
 	github.com/andygrunwald/go-jira v1.16.0
@@ -71,7 +71,6 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.5 // indirect
-	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/alecthomas/kong v0.8.0 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
