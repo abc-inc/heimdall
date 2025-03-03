@@ -69,20 +69,21 @@ type ghCfg struct {
 	// PR
 	reviewID int64
 	// Repos
-	affiliation string
-	author      string
-	base        string
-	head        string
-	path        string
-	protected   *bool
-	ref         string
-	sha         string
-	sinceID     int64
-	sinceTime   time.Time
-	tag         string
-	typ         string
-	user        string
-	visibility  string
+	affiliation   string
+	author        string
+	base          string
+	head          string
+	path          string
+	protected     *bool
+	ref           string
+	sha           string
+	sinceID       int64
+	sinceTime     time.Time
+	subjectDigest *string
+	tag           string
+	typ           string
+	user          string
+	visibility    string
 	// SecretScan
 	// state      string
 	secretType []string

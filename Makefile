@@ -14,7 +14,7 @@ tmpdir = tmp
 all: test build
 
 build: generate
-	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o "$(builddir)/" ./...
+	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o "$(builddir)/" ./cmd/...
 
 check:
 	golangci-lint run ./...
@@ -32,7 +32,8 @@ generate:
 	GOOS= GOARCH= go generate -x ./...
 
 install: all
-	$(INSTALL_PROGRAM) -Dt "$(DESTDIR)$(bindir)" "$(builddir)"/*
+	@$(INSTALL_PROGRAM) -d "$(DESTDIR)$(bindir)"
+	@$(INSTALL_PROGRAM) -v "$(builddir)"/* "$(DESTDIR)$(bindir)"
 
 test:
 	@mkdir -p "$(tmpdir)/reports"

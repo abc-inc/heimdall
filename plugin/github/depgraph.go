@@ -14,7 +14,7 @@
 
 //go:build !no_github
 
-//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v69@v69.2.0/github/dependency_graph.go ../../docs
+//go:generate go run github.com/abc-inc/heimdall/tools/cmddoc github.com/google/go-github/v69@v69.2.0/github/dependency_graph.go ../../docs
 
 package github
 

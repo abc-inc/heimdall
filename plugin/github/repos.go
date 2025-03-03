@@ -14,7 +14,7 @@
 
 //go:build !no_github
 
-//go:generate go run github.com/abc-inc/heimdall/cmd/cmddoc github.com/google/go-github/v69@v69.2.0/github/repos\*.go ../../docs
+//go:generate go run github.com/abc-inc/heimdall/tools/cmddoc github.com/google/go-github/v69@v69.2.0/github/repos\*.go ../../docs
 
 package github
 
@@ -31,9 +31,11 @@ import (
 func NewRepoCmd() *cobra.Command {
 	var branch string
 	var protected bool
+	var subjectDigest string
 	cfg := newGHCfg()
 	cfg.branch = &branch
 	cfg.protected = &protected
+	cfg.subjectDigest = &subjectDigest
 	cfg.visibility = "all"
 	cfg.affiliation = "owner,collaborator,organization_member"
 
@@ -51,13 +53,17 @@ func NewRepoCmd() *cobra.Command {
 		"actions-permissions",
 		"admin-enforcement",
 		"all",
+		"all-custom-property-values",
 		"all-topics",
 		"archive-link",
+		"attestations",
 		"automated-security-fixes",
 		"branch",
 		"branch-protection",
 		"branches",
 		"branches-head-commit",
+		"by-authenticated-user",
+		"by-user",
 		"collaborators",
 		"combined-status",
 		"comment",
@@ -72,6 +78,7 @@ func NewRepoCmd() *cobra.Command {
 		"contents",
 		"contributors",
 		"contributors-stats",
+		"default-workflow-permissions",
 		"download-contents",
 		"download-contents-with-meta",
 		"environment",
@@ -121,6 +128,8 @@ func NewRepoCmd() *cobra.Command {
 		case "archive-link":
 			addItemFlags(cfg, sub)
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
+		case "attestations":
+			sub.Flags().StringVar(cfg.subjectDigest, "subject-digest", *cfg.subjectDigest, "The digest of the subject to get attestations for")
 		case "branch":
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
 		case "branch-protection":
@@ -129,6 +138,17 @@ func NewRepoCmd() *cobra.Command {
 			sub.Flags().StringVar(cfg.branch, "branch", *cfg.branch, "Branch name")
 		case "branches":
 			sub.Flags().BoolVar(cfg.protected, "protected", *cfg.protected, "Whether to return protected, unprotected, or all branches")
+		case "by-authenticated-user":
+			sub.Flags().StringVar(&cfg.visibility, "visibility", "all", "Visibility (all, public, private)")
+			sub.Flags().StringVar(&cfg.affiliation, "affiliation", "owner,collaborator,organization_member", "Comma-separated list of (owner, collaborator, organization_member)")
+			sub.Flags().StringVar(&cfg.typ, "type", "all", "Types of repositories you want returned (all, owner, public, private, member)")
+			sub.Flags().StringVar(cfg.sort, "sort", "full_name", "The property to sort the results by (created, updated, pushed, full_name)")
+			sub.Flags().StringVar(cfg.direction, "direction", *cfg.direction, `The order to sort by (default "asc" when using full_name, otherwise "desc")`)
+		case "by-user":
+			sub.Flags().StringVar(&cfg.user, "username", cfg.user, "Handle for the GitHub user account.")
+			sub.Flags().StringVar(&cfg.typ, "type", "all", "Types of repositories you want returned (all, owner, member)")
+			sub.Flags().StringVar(cfg.sort, "sort", "full_name", "The property to sort the results by (created, updated, pushed, full_name)")
+			sub.Flags().StringVar(cfg.direction, "direction", *cfg.direction, `The order to sort by (default "asc" when using full_name, otherwise "desc")`)
 		case "combined-status":
 			sub.Flags().StringVar(&cfg.ref, "ref", cfg.ref, "Commit reference")
 		case "comment":
@@ -216,11 +236,16 @@ func execRepos(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
 		x, _, err = svc.GetAdminEnforcement(getCtx(cfg), cfg.owner, cfg.repo, *cfg.branch)
 	case "all":
 		x, _, err = svc.ListAll(getCtx(cfg), &github.RepositoryListAllOptions{Since: cfg.sinceID})
+	case "all-custom-property-values":
+		x, _, err = svc.GetAllCustomPropertyValues(getCtx(cfg), cfg.owner, cfg.repo)
 	case "all-topics":
 		x, _, err = svc.ListAllTopics(getCtx(cfg), cfg.owner, cfg.repo)
 	case "archive-link":
 		x, _, err = svc.GetArchiveLink(getCtx(cfg), cfg.owner, cfg.repo, github.Tarball,
 			&github.RepositoryContentGetOptions{Ref: *cfg.branch}, int(cfg.id))
+	case "attestations":
+		x, _, err = svc.ListAttestations(getCtx(cfg), cfg.owner, cfg.repo, *cfg.subjectDigest,
+			&github.ListOptions{Page: cfg.page, PerPage: cfg.perPage})
 	case "automated-security-fixes":
 		x, _, err = svc.GetAutomatedSecurityFixes(getCtx(cfg), cfg.owner, cfg.repo)
 	case "branch":
@@ -232,6 +257,22 @@ func execRepos(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
 	case "branches":
 		x, _, err = svc.ListBranches(getCtx(cfg), cfg.owner, cfg.repo, &github.BranchListOptions{
 			Protected: cfg.protected, ListOptions: github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
+		})
+	case "by-authenticated-user":
+		x, _, err = svc.ListByAuthenticatedUser(getCtx(cfg), &github.RepositoryListByAuthenticatedUserOptions{
+			Visibility:  cfg.visibility,
+			Affiliation: cfg.affiliation,
+			Type:        cfg.typ,
+			Sort:        *cfg.sort,
+			Direction:   *cfg.direction,
+			ListOptions: github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
+		})
+	case "by-user":
+		x, _, err = svc.ListByUser(getCtx(cfg), cfg.user, &github.RepositoryListByUserOptions{
+			Type:        cfg.typ,
+			Sort:        *cfg.sort,
+			Direction:   *cfg.direction,
+			ListOptions: github.ListOptions{Page: cfg.page, PerPage: cfg.perPage},
 		})
 	case "collaborators":
 		x, _, err = svc.ListCollaborators(getCtx(cfg), cfg.owner, cfg.repo, &github.ListCollaboratorsOptions{
@@ -281,6 +322,8 @@ func execRepos(cfg *ghCfg, cmd *cobra.Command) (x any, err error) {
 		})
 	case "contributors-stats":
 		x, _, err = svc.ListContributorsStats(getCtx(cfg), cfg.owner, cfg.repo)
+	case "default-workflow-permissions":
+		x, _, err = svc.GetDefaultWorkflowPermissions(getCtx(cfg), cfg.owner, cfg.repo)
 	case "download-contents":
 		x, _, err = svc.DownloadContents(getCtx(cfg), cfg.owner, cfg.repo, cfg.path, &github.RepositoryContentGetOptions{Ref: cfg.ref})
 	case "download-contents-with-meta":

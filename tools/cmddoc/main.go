@@ -58,12 +58,12 @@ func parseFile(srcFile, destFile string) {
 	f := internal.Must(parser.ParseFile(fset, filepath.Base(srcFile), src, parser.ParseComments))
 
 	for _, s := range f.Decls {
-		if d, ok := s.(*ast.FuncDecl); ok && d.Recv != nil {
+		if d, okFunc := s.(*ast.FuncDecl); okFunc && d.Recv != nil {
 			var t string
-			if typ, ok := d.Recv.List[0].Type.(*ast.StarExpr); ok {
-				t = fmt.Sprint(typ.X)
-			} else if typ, ok := d.Recv.List[0].Type.(*ast.Ident); ok {
-				t = typ.String()
+			if typStar, okStar := d.Recv.List[0].Type.(*ast.StarExpr); okStar {
+				t = fmt.Sprint(typStar.X)
+			} else if typIdent, okIdent := d.Recv.List[0].Type.(*ast.Ident); okIdent {
+				t = typIdent.String()
 			}
 
 			n := filepath.Join(destFile, t, d.Name.String()+".txt")
