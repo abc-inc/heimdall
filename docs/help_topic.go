@@ -25,12 +25,16 @@ import (
 
 	"github.com/abc-inc/heimdall"
 	"github.com/abc-inc/heimdall/internal"
+	"github.com/alecthomas/chroma/v2"
+	"github.com/alecthomas/chroma/v2/formatters"
+	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/charmbracelet/gum/pager"
 	"github.com/charmbracelet/gum/style"
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +48,7 @@ var Topics = []Topic{
 	{File: "contributing.md", Desc: "Information for improving Heimdall"},
 	{File: "formatting.md", Desc: "Description of output formats and filters"},
 	{File: "source.md", Desc: "Instructions for building Heimdall from source"},
+	{File: "themes", Desc: "Display a list of supported themes for syntax highlighting"},
 	{File: "why.md", Desc: fmt.Sprintf("Why %s?", color.New(color.Italic).Sprint("Heimdall"))},
 }
 
@@ -82,12 +87,18 @@ func NewHelpTopicCmd(t Topic) *cobra.Command {
 }
 
 func printTopic(cfg helpTopicCfg, t Topic, cmd *cobra.Command) {
-	str := string(internal.Must(heimdall.StaticFS.ReadFile(path.Join("docs", t.File))))
-	ext := strings.TrimPrefix(filepath.Ext(t.File), ".")
+	str, ext := "", filepath.Ext(t.File)
+	if ext == "" {
+		str = listThemes()
+	} else {
+		str = string(internal.Must(heimdall.StaticFS.ReadFile(path.Join("docs", t.File))))
+		ext = strings.TrimPrefix(filepath.Ext(t.File), ".")
+	}
+
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		if ext == "md" {
 			str = internal.Must(Render(str))
-		} else {
+		} else if ext != "" {
 			b := strings.Builder{}
 			internal.MustNoErr(quick.Highlight(&b, str, ext, "terminal", MustStyle(cfg.style)))
 			str = b.String()
@@ -118,4 +129,23 @@ func MustStyle(n string) string {
 		internal.MustOkMsgf(n, s != styles.Fallback, "Style '%s' does not exist. Valid styles are: %s", n, strings.Join(slices.Sorted(ns), " "))
 	}
 	return n
+}
+
+func listThemes() string {
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		return strings.Join(styles.Names(), "\n")
+	} else {
+		b := &strings.Builder{}
+		ex := `{"types": [true, 1, "y"]} // example`
+		l := chroma.Coalesce(lexers.Get("json"))
+		for _, s := range styles.Names() {
+			_ = internal.Must(fmt.Fprint(b, "Theme: "+s+"\n    "))
+			it, _ := l.Tokenise(nil, ex)
+			if err := formatters.TTY.Format(b, styles.Get(s), it); err != nil {
+				log.Fatal().Err(err).Send()
+			}
+			b.WriteString("\n\n")
+		}
+		return b.String()
+	}
 }

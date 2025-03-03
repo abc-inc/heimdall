@@ -27,8 +27,7 @@ import (
 
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
-	"github.com/alecthomas/chroma/lexers/b"
-	"github.com/alecthomas/chroma/lexers/y"
+	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/alessio/shellescape"
@@ -190,8 +189,8 @@ func draw(cmd *cobra.Command, args ...string) {
 func initForm(cmd *cobra.Command, args ...string) {
 	log.Info().Str("cmd", cmd.Name()).Msg("Initializing form")
 	if len(args) > 0 && filepath.Base(args[0]) == filepath.Base(os.Args[0]) {
-		if subCmd, subArgs, err := cmd.Traverse(args[1:]); err == nil {
-			preSelect(subCmd, subArgs...)
+		if sub, subArgs, err := cmd.Traverse(args[1:]); err == nil {
+			preSelect(sub, subArgs...)
 		}
 	}
 }
@@ -218,9 +217,9 @@ func preSelect(cmd *cobra.Command, args ...string) {
 			l := cases.Title(language.English).String(strings.TrimLeft(f, "-"))
 			if fi := form.GetFormItemByLabel(l); fi == nil {
 				remArgs = append(remArgs, arg)
-			} else if c, ok := fi.(*tview.Checkbox); ok {
+			} else if c, okC := fi.(*tview.Checkbox); okC {
 				c.SetChecked(true)
-			} else if d, ok := fi.(*tview.DropDown); ok && l == "Output" {
+			} else if d, okD := fi.(*tview.DropDown); okD && l == "Output" {
 				d.SetCurrentOption(slices.Index(outputs, v))
 			} else {
 				if !strings.HasPrefix(v, `"`) && !strings.HasPrefix(v, `'`) {
@@ -260,7 +259,7 @@ func createCmdDropdown(cmd *cobra.Command) *Section {
 			// The dynamic colors option replaces all [], so we need to replace them with <>.
 			usg = strings.NewReplacer(`[`, `<`, `]`, `>`).Replace(usg)
 			internal.MustNoErr(quick.Highlight(tview.ANSIWriter(buf), usg,
-				y.YAML.Config().Name, "terminal", styles.Get("GitHub").Name))
+				lexers.Get("yaml").Config().Name, "terminal", styles.Get("GitHub").Name))
 
 			usg = strings.ReplaceAll(buf.String(), "[silver::b]", sectFG)
 			docs.SetText(usg)
@@ -402,7 +401,7 @@ func highlight(str string) string {
 	}
 
 	w := &strings.Builder{}
-	internal.MustNoErr(quick.Highlight(w, val, b.Bash.Config().Name, "terminal", styles.Get("GitHub").Name))
+	internal.MustNoErr(quick.Highlight(w, val, lexers.Get("bash").Config().Name, "terminal", styles.Get("GitHub").Name))
 	val = w.String()
 	return flag + "=" + val
 }

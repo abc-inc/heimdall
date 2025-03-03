@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -35,7 +36,6 @@ import (
 	"github.com/google/go-github/v69/github"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 	"golang.org/x/oauth2"
 )
 

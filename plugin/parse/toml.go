@@ -18,6 +18,7 @@ package parse
 
 import (
 	"io"
+	"maps"
 
 	"github.com/BurntSushi/toml"
 	"github.com/MakeNowJust/heredoc/v2"
@@ -25,7 +26,6 @@ import (
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 )
 
 type tomlCfg struct {

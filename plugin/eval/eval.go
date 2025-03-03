@@ -18,26 +18,26 @@ package eval
 
 import (
 	"encoding/json"
+	"maps"
 	"net/url"
 	"os"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc/v2"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/plugin/parse"
 	"github.com/abc-inc/heimdall/res"
-	sprig "github.com/go-task/slim-sprig/v3"
 	"github.com/gobwas/glob"
 	"github.com/mattn/go-zglob"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 type engine interface {
@@ -65,8 +65,7 @@ HEIMDALL_TEMPLATE_FILE
 `
 
 func NewEvalCmd() *cobra.Command {
-	names := maps.Keys(engines)
-	slices.Sort(names)
+	names := slices.Sorted(maps.Keys(engines))
 
 	cfg := evalCfg{engine: "expr"}
 	cmd := &cobra.Command{
@@ -110,9 +109,8 @@ func NewEvalCmd() *cobra.Command {
 
 func eval(cfg evalCfg, args []string) {
 	if _, ok := engines[cfg.engine]; !ok {
-		names := maps.Keys(engines)
-		slices.Sort(names)
-		log.Fatal().Msgf(`cannot find engine "%s", must be one of "%s"`, cfg.engine, strings.Join(names, `", "`))
+		log.Fatal().Msgf(`cannot find engine "%s", must be one of "%s"`,
+			cfg.engine, strings.Join(slices.Sorted(maps.Keys(engines)), `", "`))
 	}
 	if t := os.Getenv("HEIMDALL_TEMPLATE_FILE"); t != "" && cfg.template == "" {
 		internal.MustNoErr(os.Setenv("HEIMDALL_TEMPLATE", string(internal.Must(os.ReadFile(t)))))

@@ -36,7 +36,6 @@ import (
 	"github.com/abc-inc/heimdall/plugin/keyring"
 	"github.com/abc-inc/heimdall/plugin/parse"
 	"github.com/abc-inc/heimdall/plugin/ssh"
-	"github.com/abc-inc/heimdall/plugin/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -84,7 +83,6 @@ func GetRootCmd() *cobra.Command {
 		keyring.NewKeyringCmd(),
 		parse.NewParseCmd(),
 		ssh.NewSSHCmd(),
-		uuid.NewUUIDCmd(),
 	)
 
 	for _, t := range docs.Topics {

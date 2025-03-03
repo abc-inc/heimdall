@@ -32,7 +32,6 @@ import (
 type htmlCfg struct {
 	cli.OutCfg
 	file string
-	add  []string
 }
 
 func NewHTMLCmd() *cobra.Command {

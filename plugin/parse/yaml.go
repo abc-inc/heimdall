@@ -18,13 +18,13 @@ package parse
 
 import (
 	"io"
+	"maps"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 
