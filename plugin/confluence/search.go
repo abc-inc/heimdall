@@ -17,8 +17,10 @@
 package confluence
 
 import (
+	"net/http"
 	"os"
 	"time"
+	"net/url"
 
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
@@ -29,18 +31,20 @@ import (
 
 type confluenceSearchCfg struct {
 	confluenceCfg
-	limit  int
-	start  int
-	cql    string
-	expand string
+	limit      	int
+	start      	int
+	cql        	string
+	expand     	string
+	exportAsPDF bool
 }
 
 func NewSearchCmd() *cobra.Command {
 	cfg := confluenceSearchCfg{confluenceCfg: confluenceCfg{
 		baseURL: os.Getenv("CONFLUENCE_API_URL"),
 		timeout: 30 * time.Second},
-		expand: "content.body.storage",
-		limit:  1,
+		expand:     "content.body.storage",
+		limit:      1,
+		exportAsPDF: false,
 	}
 
 	cmd := &cobra.Command{
@@ -57,7 +61,9 @@ func NewSearchCmd() *cobra.Command {
 				goconfluence.SetDebug(true)
 			}
 			s := search(cfg)
-			if cfg.limit == 1 && len(s.Results) == 1 {
+			if cfg.exportAsPDF {
+				exportToPDF(s, cfg)
+			} else if cfg.limit == 1 && len(s.Results) == 1 {
 				cli.Fmtln(s.Results[0])
 			} else {
 				cli.Fmtln(s.Results)
@@ -69,10 +75,13 @@ func NewSearchCmd() *cobra.Command {
 	cmd.Flags().StringVar(&cfg.cql, "filter", cfg.cql, "CQL query for searching")
 	cmd.Flags().IntVar(&cfg.limit, "limit", cfg.limit, "Maximum items to return")
 	cmd.Flags().IntVar(&cfg.start, "start", cfg.start, "Starting index of the returned list")
+	cmd.Flags().BoolVar(&cfg.exportAsPDF, "export-as-pdf", cfg.exportAsPDF, "Export search result to a PDF file which will be output to stdout")
 	addCommonFlags(cmd, &cfg.confluenceCfg)
 
 	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
+	cmd.MarkFlagsMutuallyExclusive("export-as-pdf", "limit")
+	cmd.MarkFlagsMutuallyExclusive("export-as-pdf", "output")
 	return cmd
 }
 
@@ -86,4 +95,21 @@ func search(cfg confluenceSearchCfg) *goconfluence.Search {
 	}))
 
 	return s
+}
+
+func exportToPDF(s *goconfluence.Search, cfg confluenceSearchCfg) {
+	internal.MustOkMsgf(1, len(s.Results) == 1, "Error: The result of the search is expected to be 1 result, found %d: PDF not exported.", len(s.Results))
+	page := s.Results[0].Content.ID
+	pdfExportURL := createPDFExportURL(cfg.baseURL, page)
+    req := internal.Must(http.NewRequest("GET", pdfExportURL, nil))
+	api := internal.Must(newClient(cfg.baseURL, cfg.token))
+    resp := internal.Must(api.Request(req))
+	internal.Must(os.Stdout.Write(resp))
+}
+
+func createPDFExportURL(baseURL string, pageID string) string {
+    u := internal.Must(url.Parse(baseURL))
+	u = u.JoinPath("../../spaces/flyingpdf/pdfpageexport.action")
+	u.RawQuery = "pageId=" + pageID
+    return u.String()
 }

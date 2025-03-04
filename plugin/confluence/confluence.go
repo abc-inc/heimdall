@@ -21,6 +21,7 @@ import (
 	"io"
 	"strings"
 	"time"
+	"net/http/cookiejar"
 
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
@@ -72,7 +73,11 @@ func newClient(baseURL, token string) (*goconfluence.API, error) {
 	if baseURL == "" || token == "" {
 		return nil, fmt.Errorf("CONFLUENCE_API_URL and CONFLUENCE_TOKEN must be defined")
 	}
-	return goconfluence.NewAPI(baseURL, "", token)
+	api, err := goconfluence.NewAPI(baseURL, "", token)
+	if err == nil {
+		api.Client.Jar = internal.Must(cookiejar.New(nil))
+	}
+	return api, err
 }
 
 func addCommonFlags(cmd *cobra.Command, cfg *confluenceCfg) {
