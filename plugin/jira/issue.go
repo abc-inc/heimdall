@@ -17,9 +17,7 @@
 package jira
 
 import (
-	"context"
-	"os"
-	"time"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/cli"
@@ -34,51 +32,73 @@ type jiraIssueCfg struct {
 }
 
 func NewIssueCmd() *cobra.Command {
-	cfg := jiraIssueCfg{jiraCfg: jiraCfg{apiURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
 	cmd := &cobra.Command{
 		Use:   "issue",
-		Short: "Search Jira issues",
-		Example: heredoc.Doc(`
-			# list the top 10 open bugs and return all details (including nested fields) about assignee, priority and summary.
-			heimdall jira issue --filter "project = ABC AND type = Bug AND resolution = Unresolved ORDER BY priority DESC, updated DESC" \
-			    --fields 'assignee,priority,summary' --max-results 10
-
-			# list all stories and output a custom formatted JSON for summarizing the release notes
-			heimdall jira issue --filter "project = ABC AND type = Story AND fixVersion='ABC 1.2' ORDER BY id" \
-			    --jq ".[] | {id: .key, summary: .fields.summary, status: .fields.status.name}"
-		`),
-		Args: cobra.ExactArgs(0),
-		PreRun: func(cmd *cobra.Command, args []string) {
-			if cfg.token == "" {
-				cfg.token = os.Getenv("JIRA_TOKEN")
-			}
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient(cfg.apiURL, cfg.token)
-			if err != nil {
-				return err
-			}
-
-			is, _, err := listIssues(client, cfg)
-			if err == nil {
-				cli.Fmtln(is)
-			}
-			return err
-		},
+		Short: "Work with Jira issues",
+		Args:  cobra.ExactArgs(0),
 	}
 
-	cmd.Flags().StringVar(&cfg.jql, "filter", cfg.jql, "JQL query for searching")
-	addCommonFlags(cmd, &cfg.jiraCfg)
+	cmd.AddCommand(
+		NewGetIssueCmd(),
+		NewListIssuesCmd(),
 
-	cli.AddOutputFlags(cmd, &cfg.OutCfg)
-	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
-	cfg.opts = addSearchOpts(cmd)
+		NewDownloadAttachmentCmd(),
+		NewUploadAttachmentCmd(),
+	)
+
 	return cmd
 }
 
-// listIssues searches for Jira issues matching the given JQL query and search options.
-func listIssues(client *jira.Client, cfg jiraIssueCfg) ([]jira.Issue, *jira.Response, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.timeout)
-	defer cancel()
-	return client.Issue.SearchWithContext(ctx, cfg.jql, cfg.opts)
+func NewGetIssueCmd() *cobra.Command {
+	cfg := jiraIssueCfg{jiraCfg: *newJiraCfg()}
+	cmd := &cobra.Command{
+		Use:   "get-issue",
+		Short: "Get a Jira issue by its id or key",
+		Example: heredoc.Doc(`
+			heimdall jira issue get-issue ABC-123
+		`),
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			client := internal.Must(newClient(cfg.apiURL, cfg.token))
+			cli.Fmtln(handle(client.Issue.Get(args[0], &jira.GetQueryOptions{
+				Fields: strings.Join(cfg.jiraCfg.opts.Fields, ","),
+				Expand: cfg.jiraCfg.opts.Expand,
+			})))
+		},
+	}
+
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
+	addCommonFlags(cmd, &cfg.jiraCfg)
+
+	return cmd
+}
+
+func NewListIssuesCmd() *cobra.Command {
+	cfg := jiraIssueCfg{jiraCfg: *newJiraCfg()}
+	cmd := &cobra.Command{
+		Use:   "list-issues",
+		Short: "Search Jira issues",
+		Example: heredoc.Doc(`
+			# list the top 10 open bugs and return all details (including nested fields) about assignee, priority and summary.
+			heimdall jira issue list-issues --filter "project = ABC AND type = Bug AND resolution = Unresolved ORDER BY priority DESC, updated DESC" \
+			    --fields 'assignee,priority,summary' --max-results 10
+
+			# list all stories and output a custom formatted JSON for summarizing the release notes
+			heimdall jira issue list-issues --filter "project = ABC AND type = Story AND fixVersion='ABC 1.2' ORDER BY id" \
+			    --jq ".[] | {id: .key, summary: .fields.summary, status: .fields.status.name}"
+		`),
+		Args: cobra.ExactArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			client := internal.Must(newClient(cfg.apiURL, cfg.token))
+			cli.Fmtln(handle(client.Issue.Search(cfg.jql, cfg.opts)))
+		},
+	}
+
+	cli.AddOutputFlags(cmd, &cfg.OutCfg)
+	addCommonFlags(cmd, &cfg.jiraCfg)
+	addSearchFlags(cmd, cfg.opts)
+
+	cmd.Flags().StringVar(&cfg.jql, "filter", cfg.jql, "JQL query for searching")
+	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
+	return cmd
 }

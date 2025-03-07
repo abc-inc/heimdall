@@ -17,10 +17,6 @@
 package jira
 
 import (
-	"context"
-	"os"
-	"time"
-
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
@@ -34,7 +30,7 @@ type jiraVersionCfg struct {
 }
 
 func NewVersionCmd() *cobra.Command {
-	cfg := jiraVersionCfg{jiraCfg: jiraCfg{apiURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
+	cfg := jiraVersionCfg{jiraCfg: *newJiraCfg()}
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "List project versions",
@@ -46,11 +42,6 @@ func NewVersionCmd() *cobra.Command {
 			heimdall jira version --project ABC --jq '.[] | select(.name == "ABC 1.2")'
 		`),
 		Args: cobra.ExactArgs(0),
-		PreRun: func(cmd *cobra.Command, args []string) {
-			if cfg.token == "" {
-				cfg.token = os.Getenv("JIRA_TOKEN")
-			}
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient(cfg.apiURL, cfg.token)
 			if err != nil {
@@ -66,7 +57,6 @@ func NewVersionCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&cfg.project, "project", "p", cfg.project, "Project name")
-	addCommonFlags(cmd, &cfg.jiraCfg)
 
 	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("project"))
@@ -75,9 +65,7 @@ func NewVersionCmd() *cobra.Command {
 
 // listVersions returns all versions of a given project.
 func listVersions(client *jira.Client, cfg jiraVersionCfg) ([]jira.Version, *jira.Response, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.timeout)
-	defer cancel()
-	p, resp, err := client.Project.GetWithContext(ctx, cfg.project)
+	p, resp, err := client.Project.Get(cfg.project)
 	if err != nil {
 		return nil, resp, err
 	}

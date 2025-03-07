@@ -17,12 +17,8 @@
 package jira
 
 import (
-	"context"
 	"net/http"
-	"os"
-	"time"
 
-	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/andygrunwald/go-jira"
@@ -35,18 +31,11 @@ type jiraDevStatusCfg struct {
 }
 
 func NewDevStatusCmd() *cobra.Command {
-	cfg := jiraDevStatusCfg{jiraCfg: jiraCfg{apiURL: os.Getenv("JIRA_API_URL"), timeout: 30 * time.Second}}
+	cfg := jiraDevStatusCfg{jiraCfg: *newJiraCfg()}
 	cmd := &cobra.Command{
 		Use:   "dev-status",
 		Short: "Get details about the development status.",
-		Example: heredoc.Doc(`
-		`),
-		Args: cobra.ExactArgs(0),
-		PreRun: func(cmd *cobra.Command, args []string) {
-			if cfg.token == "" {
-				cfg.token = os.Getenv("JIRA_TOKEN")
-			}
-		},
+		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := newClient(cfg.apiURL, cfg.token)
 			if err != nil {
@@ -62,7 +51,6 @@ func NewDevStatusCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&cfg.issueID, "issue-id", "i", cfg.issueID, "ID of the Jira issue")
-	addCommonFlags(cmd, &cfg.jiraCfg)
 
 	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("issue-id"))
@@ -70,9 +58,7 @@ func NewDevStatusCmd() *cobra.Command {
 }
 
 func getDetails(client *jira.Client, cfg jiraDevStatusCfg) (body map[string]any, resp *jira.Response, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.timeout)
-	defer cancel()
-	req := internal.Must(client.NewRequestWithContext(ctx, http.MethodGet,
+	req := internal.Must(client.NewRequest(http.MethodGet,
 		"/rest/dev-status/1.0/issue/detail?issueId="+cfg.issueID+"&applicationType=githube&dataType=repository", nil))
 	resp, err = client.Do(req, &body)
 	return

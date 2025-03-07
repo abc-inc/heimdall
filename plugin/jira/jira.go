@@ -18,20 +18,28 @@ package jira
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/abc-inc/heimdall/cli"
+	"github.com/abc-inc/heimdall/internal"
 	"github.com/andygrunwald/go-jira"
 	"github.com/spf13/cobra"
 )
 
 type jiraCfg struct {
 	cli.OutCfg
-	apiURL  string
-	token   string
-	timeout time.Duration
-	opts    *jira.SearchOptions
+	apiURL string
+	token  string
+	opts   *jira.SearchOptions
+}
+
+func newJiraCfg() *jiraCfg {
+	return &jiraCfg{
+		apiURL: os.Getenv("JIRA_API_URL"),
+		token:  os.Getenv("JIRA_TOKEN"),
+	}
 }
 
 const envHelp = `
@@ -62,21 +70,27 @@ func newClient(apiURL, token string) (*jira.Client, error) {
 	if apiURL == "" || token == "" {
 		return nil, fmt.Errorf("JIRA_API_URL and JIRA_TOKEN must be defined")
 	}
+
 	tp := jira.PATAuthTransport{Token: token}
-	return jira.NewClient(tp.Client(), baseURL(apiURL))
+	httpClient := tp.Client()
+	httpClient.Timeout = 30 * time.Second
+	return jira.NewClient(httpClient, baseURL(apiURL))
 }
 
 func addCommonFlags(cmd *cobra.Command, cfg *jiraCfg) {
-	cmd.Flags().DurationVarP(&cfg.timeout, "timeout", "T", cfg.timeout, "Set the network timeout in seconds")
+	if cfg.opts == nil {
+		cfg.opts = &jira.SearchOptions{MaxResults: 50}
+	}
+	cmd.Flags().StringVar(&cfg.opts.Expand, "expand", cfg.opts.Expand, "Expand specific sections in the returned list")
+	cmd.Flags().StringSliceVar(&cfg.opts.Fields, "fields", cfg.opts.Fields, "List of fields to return. By default, all fields are returned.")
 }
 
-func addSearchOpts(cmd *cobra.Command) *jira.SearchOptions {
-	opts := &jira.SearchOptions{StartAt: 0, MaxResults: 50, Expand: "", Fields: nil, ValidateQuery: ""}
+func addSearchFlags(cmd *cobra.Command, opts *jira.SearchOptions) *jira.SearchOptions {
+	if opts == nil {
+		opts = &jira.SearchOptions{MaxResults: 50}
+	}
 	cmd.Flags().IntVar(&opts.StartAt, "start-at", opts.StartAt, "Starting index of the returned list")
 	cmd.Flags().IntVar(&opts.MaxResults, "max-results", opts.MaxResults, "Maximum number of items to return per page")
-	cmd.Flags().StringVar(&opts.Expand, "expand", opts.Expand, "Expand specific sections in the returned list")
-	cmd.Flags().StringSliceVar(&opts.Fields, "fields", opts.Fields, "List of fields to return. By default, all fields are returned.")
-	cmd.Flags().StringVar(&opts.ValidateQuery, "validation", opts.ValidateQuery, "Whether to validate and how strictly to treat the validation (strict/warn) (default strict)")
 	return opts
 }
 
@@ -85,4 +99,16 @@ func baseURL(url string) string {
 	url = strings.TrimSuffix(url, "/api")
 	url = strings.TrimSuffix(url, "/rest")
 	return url
+}
+
+func handle[T any](ret T, resp *jira.Response, err error) T {
+	closeBody(resp)
+	internal.MustNoErr(err)
+	return ret
+}
+
+func closeBody(resp *jira.Response) {
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
 }
