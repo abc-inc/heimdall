@@ -57,7 +57,7 @@ func NewJiraCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		NewDevStatusCmd(),
+		NewAttachmentCmd(),
 		NewIssueCmd(),
 		NewVersionCmd(),
 	)
@@ -89,8 +89,8 @@ func addSearchFlags(cmd *cobra.Command, opts *jira.SearchOptions) *jira.SearchOp
 	if opts == nil {
 		opts = &jira.SearchOptions{MaxResults: 50}
 	}
-	cmd.Flags().IntVar(&opts.StartAt, "start-at", opts.StartAt, "Starting index of the returned list")
-	cmd.Flags().IntVar(&opts.MaxResults, "max-results", opts.MaxResults, "Maximum number of items to return per page")
+	cmd.Flags().IntVar(&opts.StartAt, "skip", opts.StartAt, "Starting index of the returned list")
+	cmd.Flags().IntVar(&opts.MaxResults, "limit", opts.MaxResults, "Maximum number of items to return per page")
 	return opts
 }
 

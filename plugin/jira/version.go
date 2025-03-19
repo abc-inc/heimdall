@@ -30,29 +30,35 @@ type jiraVersionCfg struct {
 }
 
 func NewVersionCmd() *cobra.Command {
-	cfg := jiraVersionCfg{jiraCfg: *newJiraCfg()}
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "List project versions",
+		Short: "Work with Jira project versions",
+		Args:  cobra.ExactArgs(0),
+	}
+
+	cmd.AddCommand(
+		NewVersionListCmd(),
+	)
+
+	return cmd
+}
+
+func NewVersionListCmd() *cobra.Command {
+	cfg := jiraVersionCfg{jiraCfg: *newJiraCfg()}
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List Jira project versions",
 		Example: heredoc.Doc(`
 			# list all versions formatted as CSV
-			heimdall jira version --project ABC --output csv
+			heimdall jira version list --project ABC --output csv
 
 			# get details about a specific version
-			heimdall jira version --project ABC --jq '.[] | select(.name == "ABC 1.2")'
+			heimdall jira version list --project ABC --jq '.[] | select(.name == "ABC 1.2")'
 		`),
 		Args: cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := newClient(cfg.apiURL, cfg.token)
-			if err != nil {
-				return err
-			}
-
-			vs, _, err := listVersions(client, cfg)
-			if err == nil {
-				cli.Fmtln(vs)
-			}
-			return err
+		Run: func(cmd *cobra.Command, args []string) {
+			client := internal.Must(newClient(cfg.apiURL, cfg.token))
+			cli.Fmtln(listVersions(client, cfg))
 		},
 	}
 
@@ -64,10 +70,6 @@ func NewVersionCmd() *cobra.Command {
 }
 
 // listVersions returns all versions of a given project.
-func listVersions(client *jira.Client, cfg jiraVersionCfg) ([]jira.Version, *jira.Response, error) {
-	p, resp, err := client.Project.Get(cfg.project)
-	if err != nil {
-		return nil, resp, err
-	}
-	return p.Versions, resp, err
+func listVersions(client *jira.Client, cfg jiraVersionCfg) []jira.Version {
+	return handle(client.Project.Get(cfg.project)).Versions
 }

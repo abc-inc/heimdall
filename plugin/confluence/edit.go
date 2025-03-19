@@ -74,7 +74,7 @@ func update(cfg confluenceUpdateCfg) *goconfluence.Content {
 	s := search(confluenceSearchCfg{
 		confluenceCfg: cfg.confluenceCfg,
 		limit:         2,
-		start:         0,
+		offset:        0,
 		cql:           cfg.cql,
 		expand:        cfg.expand,
 	})

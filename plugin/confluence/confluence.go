@@ -19,9 +19,9 @@ package confluence
 import (
 	"fmt"
 	"io"
+	"net/http/cookiejar"
 	"strings"
 	"time"
-	"net/http/cookiejar"
 
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"

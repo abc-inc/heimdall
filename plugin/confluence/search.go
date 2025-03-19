@@ -17,10 +17,11 @@
 package confluence
 
 import (
+	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
-	"net/url"
 
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
@@ -31,20 +32,20 @@ import (
 
 type confluenceSearchCfg struct {
 	confluenceCfg
-	limit      	int
-	start      	int
-	cql        	string
-	expand     	string
-	exportAsPDF bool
+	limit  int
+	offset int
+	cql    string
+	expand string
+	export string
+	file   string
 }
 
 func NewSearchCmd() *cobra.Command {
 	cfg := confluenceSearchCfg{confluenceCfg: confluenceCfg{
 		baseURL: os.Getenv("CONFLUENCE_API_URL"),
 		timeout: 30 * time.Second},
-		expand:     "content.body.storage",
-		limit:      1,
-		exportAsPDF: false,
+		expand: "content.body.storage",
+		limit:  10,
 	}
 
 	cmd := &cobra.Command{
@@ -60,28 +61,30 @@ func NewSearchCmd() *cobra.Command {
 			if zerolog.GlobalLevel() == zerolog.TraceLevel || zerolog.GlobalLevel() == zerolog.DebugLevel {
 				goconfluence.SetDebug(true)
 			}
+			if cfg.export == "html" {
+				cfg.expand = "content.body.view," + cfg.expand
+			}
 			s := search(cfg)
-			if cfg.exportAsPDF {
-				exportToPDF(s, cfg)
-			} else if cfg.limit == 1 && len(s.Results) == 1 {
-				cli.Fmtln(s.Results[0])
+			if cfg.export != "" {
+				export(s, cfg)
 			} else {
-				cli.Fmtln(s.Results)
+				cli.Fmtln(s)
 			}
 		},
 	}
 
 	cmd.Flags().StringVar(&cfg.expand, "expand", cfg.expand, "Expand specific entities in the returned list")
+	cmd.Flags().StringVarP(&cfg.file, "file", "O", cfg.file, "File to save the page to (use '-' for standard output)")
 	cmd.Flags().StringVar(&cfg.cql, "filter", cfg.cql, "CQL query for searching")
-	cmd.Flags().IntVar(&cfg.limit, "limit", cfg.limit, "Maximum items to return")
-	cmd.Flags().IntVar(&cfg.start, "start", cfg.start, "Starting index of the returned list")
-	cmd.Flags().BoolVar(&cfg.exportAsPDF, "export-as-pdf", cfg.exportAsPDF, "Export search result to a PDF file which will be output to stdout")
+	cmd.Flags().IntVar(&cfg.limit, "limit", cfg.limit, "Maximum number of items to return")
+	cmd.Flags().IntVar(&cfg.offset, "offset", cfg.offset, "Starting index of the returned list")
+	cmd.Flags().StringVar(&cfg.export, "export", cfg.export, "Export page (supported modes: pdf, html)")
 	addCommonFlags(cmd, &cfg.confluenceCfg)
 
 	cli.AddOutputFlags(cmd, &cfg.OutCfg)
 	internal.MustNoErr(cmd.MarkFlagRequired("filter"))
-	cmd.MarkFlagsMutuallyExclusive("export-as-pdf", "limit")
-	cmd.MarkFlagsMutuallyExclusive("export-as-pdf", "output")
+	cmd.MarkFlagsMutuallyExclusive("export", "limit")
+	cmd.MarkFlagsMutuallyExclusive("export", "output")
 	return cmd
 }
 
@@ -90,26 +93,64 @@ func search(cfg confluenceSearchCfg) *goconfluence.Search {
 	s := internal.Must(api.Search(goconfluence.SearchQuery{
 		CQL:    cfg.cql,
 		Limit:  cfg.limit,
-		Start:  cfg.start,
+		Start:  cfg.offset,
 		Expand: []string{cfg.expand},
 	}))
 
 	return s
 }
 
-func exportToPDF(s *goconfluence.Search, cfg confluenceSearchCfg) {
-	internal.MustOkMsgf(1, len(s.Results) == 1, "Error: The result of the search is expected to be 1 result, found %d: PDF not exported.", len(s.Results))
-	page := s.Results[0].Content.ID
-	pdfExportURL := createPDFExportURL(cfg.baseURL, page)
-    req := internal.Must(http.NewRequest("GET", pdfExportURL, nil))
+func export(s *goconfluence.Search, cfg confluenceSearchCfg) {
+	internal.MustOkMsgf(1, len(s.Results) == 1, "expected 1 page, but found %d", len(s.Results))
+
+	switch cfg.export {
+	case "html":
+		exportHTML(cfg, s.Results[0])
+	case "pdf":
+		exportPDF(cfg, s.Results[0])
+	default:
+		internal.MustOkMsgf(cfg.export, false, "invalid export format: %s", cfg.export)
+	}
+}
+
+func exportPDF(cfg confluenceSearchCfg, page goconfluence.Results) {
+	u := createPDFExportURL(cfg.baseURL, page.Content.ID)
+	req := internal.Must(http.NewRequest("GET", u, nil))
 	api := internal.Must(newClient(cfg.baseURL, cfg.token))
-    resp := internal.Must(api.Request(req))
-	internal.Must(os.Stdout.Write(resp))
+	data := internal.Must(api.Request(req))
+
+	if cfg.file == "-" {
+		internal.Must(os.Stdout.Write(data))
+		return
+	}
+
+	if cfg.file == "" {
+		cfg.file = page.Content.Title + ".pdf"
+	}
+
+	internal.MustNoErr(os.WriteFile(cfg.file, data, 0640))
+}
+
+func exportHTML(cfg confluenceSearchCfg, page goconfluence.Results) {
+	data := page.Content.Body.View.Value
+
+	if cfg.file == "-" {
+		internal.Must(os.Stdout.WriteString(data))
+		return
+	}
+
+	if cfg.file == "" {
+		cfg.file = page.Content.Title + ".html"
+	}
+
+	f := internal.Must(os.OpenFile(cfg.file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0640))
+	defer func() { _ = f.Close() }()
+	_ = internal.Must(io.WriteString(f, data))
 }
 
 func createPDFExportURL(baseURL string, pageID string) string {
-    u := internal.Must(url.Parse(baseURL))
+	u := internal.Must(url.Parse(baseURL))
 	u = u.JoinPath("../../spaces/flyingpdf/pdfpageexport.action")
 	u.RawQuery = "pageId=" + pageID
-    return u.String()
+	return u.String()
 }

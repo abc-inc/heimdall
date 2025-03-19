@@ -39,23 +39,20 @@ func NewIssueCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		NewGetIssueCmd(),
+		NewViewIssueCmd(),
 		NewListIssuesCmd(),
-
-		NewDownloadAttachmentCmd(),
-		NewUploadAttachmentCmd(),
 	)
 
 	return cmd
 }
 
-func NewGetIssueCmd() *cobra.Command {
+func NewViewIssueCmd() *cobra.Command {
 	cfg := jiraIssueCfg{jiraCfg: *newJiraCfg()}
 	cmd := &cobra.Command{
-		Use:   "get-issue",
-		Short: "Get a Jira issue by its id or key",
+		Use:   "view",
+		Short: "View a Jira issue by its ID or key",
 		Example: heredoc.Doc(`
-			heimdall jira issue get-issue ABC-123
+			heimdall jira issue view ABC-123
 		`),
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -76,15 +73,15 @@ func NewGetIssueCmd() *cobra.Command {
 func NewListIssuesCmd() *cobra.Command {
 	cfg := jiraIssueCfg{jiraCfg: *newJiraCfg()}
 	cmd := &cobra.Command{
-		Use:   "list-issues",
+		Use:   "list",
 		Short: "Search Jira issues",
 		Example: heredoc.Doc(`
 			# list the top 10 open bugs and return all details (including nested fields) about assignee, priority and summary.
-			heimdall jira issue list-issues --filter "project = ABC AND type = Bug AND resolution = Unresolved ORDER BY priority DESC, updated DESC" \
+			heimdall jira issue list --filter "project = ABC AND type = Bug AND resolution = Unresolved ORDER BY priority DESC, updated DESC" \
 			    --fields 'assignee,priority,summary' --max-results 10
 
 			# list all stories and output a custom formatted JSON for summarizing the release notes
-			heimdall jira issue list-issues --filter "project = ABC AND type = Story AND fixVersion='ABC 1.2' ORDER BY id" \
+			heimdall jira issue list --filter "project = ABC AND type = Story AND fixVersion='ABC 1.2' ORDER BY id" \
 			    --jq ".[] | {id: .key, summary: .fields.summary, status: .fields.status.name}"
 		`),
 		Args: cobra.ExactArgs(0),

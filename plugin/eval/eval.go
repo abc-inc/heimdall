@@ -203,8 +203,8 @@ func load(i parse.Input, envMap map[string]any) {
 	r := internal.Must(res.Open(i.File))
 	defer func() { _ = r.Close() }()
 
-	if d, ok := parse.Decoders[i.Typ]; ok {
-		log.Debug().Str("type", i.Typ).Msg("Using decoder")
+	if d, ok := parse.Decoders[i.Type]; ok {
+		log.Debug().Str("type", i.Type).Msg("Using decoder")
 		v := internal.Must[any](d(r))
 		if reflect.TypeOf(v).Kind() == reflect.Map {
 			merge(envMap, i.Alias, v.(map[string]any))

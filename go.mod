@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/abc-inc/goava v0.0.0-20221112121716-7272a4325174
-	github.com/abc-inc/gutenfmt v0.4.0
+	github.com/abc-inc/gutenfmt v0.4.1
 	github.com/alecthomas/chroma/v2 v2.15.0
 	github.com/alessio/shellescape v1.4.2
 	github.com/andygrunwald/go-jira v1.16.0

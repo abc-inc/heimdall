@@ -50,7 +50,7 @@ func Fmt(a any) {
 			// Sometimes it is not possible to log an error by gojq (see gojq.TypeOf).
 			// In this case, the message is logged without error.
 			if r := recover(); r != nil {
-				log.Fatal().Msg("Cannot write output")
+				log.Fatal().Any("output", a).Type("type", a).Msg("Cannot write output")
 			}
 		}()
 		log.Fatal().AnErr(ErrKey, err).Msg("Cannot write output")

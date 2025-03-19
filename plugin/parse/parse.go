@@ -36,6 +36,7 @@ var Decoders = make(map[string]Decoder)
 
 type parseCfg struct {
 	cli.OutCfg
+	defType string
 }
 
 func NewParseCmd() *cobra.Command {
@@ -55,8 +56,7 @@ func NewParseCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			m := make(map[string]any)
 			for _, f := range args {
-				v, err := processFile(f)
-				internal.MustNoErr(err)
+				v := internal.Must(processFile(f, cfg.defType))
 				i := SplitNamePrefixType(f)
 				internal.MustNoErr(mergo.Map(&m, toAnyMap(v, i.Alias), mergo.WithOverride))
 			}
@@ -73,37 +73,40 @@ func NewParseCmd() *cobra.Command {
 	return cmd
 }
 
-func processFile(name string) (m any, err error) {
+func processFile(name string, defType string) (m any, err error) {
 	i := SplitNamePrefixType(name)
-	if d, ok := Decoders[i.Typ]; ok {
+	if i.Type == "" || i.Type == "auto" {
+		i.Type = defType
+	}
+	if d, ok := Decoders[i.Type]; ok {
 		r := internal.Must(res.Open(i.File))
 		defer func() { _ = r.Close() }()
 		return d(r)
 	}
-	log.Fatal().Msgf("unsupported file extension: %s", i.Typ)
+	log.Fatal().Msgf("unsupported file type: %s", i.Type)
 	return nil, err
 }
 
 type Input struct {
 	File  string
 	Alias string
-	Typ   string
+	Type  string
 }
 
 func (i Input) String() string {
-	return i.File + ":" + i.Alias + ":" + i.Typ
+	return i.File + ":" + i.Alias + ":" + i.Type
 }
 
 func SplitNamePrefixType(name string) Input {
 	idx := strings.LastIndexAny(name, `/\`) + 1
-	base := name[idx:]
-	parts := strings.SplitN(base, ":", 3)
+	parts := strings.SplitN(name[idx:], ":", 3)
+	ext := strings.ToLower(strings.TrimPrefix(path.Ext(parts[0]), "."))
 	switch len(parts) {
 	case 3:
-		return Input{File: name[:idx] + parts[0], Alias: parts[1], Typ: strings.ToLower(parts[2])}
+		return Input{File: name[:idx] + parts[0], Alias: parts[1], Type: strings.ToLower(parts[2])}
 	case 2:
-		return Input{File: name[:idx] + parts[0], Alias: parts[1], Typ: strings.ToLower(strings.TrimPrefix(path.Ext(parts[0]), "."))}
+		return Input{File: name[:idx] + parts[0], Alias: parts[1], Type: ext}
 	default:
-		return Input{File: name[:idx] + parts[0], Alias: "", Typ: strings.ToLower(strings.TrimPrefix(path.Ext(parts[0]), "."))}
+		return Input{File: name[:idx] + parts[0], Alias: "", Type: ext}
 	}
 }

@@ -18,7 +18,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
+	"slices"
 	"strings"
+
+	"github.com/abc-inc/heimdall/internal"
+	"github.com/mattn/go-zglob"
 )
 
 var client http.Client
@@ -45,4 +50,41 @@ func Open(uri string) (io.ReadCloser, error) {
 
 func IsURL(uri string) bool {
 	return strings.HasPrefix(uri, "https://") || strings.HasPrefix(uri, "http://")
+}
+
+func Match(pat string, name string) bool {
+	if strings.HasPrefix(pat, "^") {
+		re := internal.Must(regexp.Compile(pat))
+		return re.MatchString(name)
+	}
+	g := internal.Must(zglob.New(pat))
+	return g.Match(name)
+}
+
+func MatchAny[E any](lens func(e E) string, pat string) func(E) bool {
+	return func(e E) bool {
+		return Match(pat, lens(e))
+	}
+}
+
+func Seq[E any](filter func(e E) bool, es ...E) func(yield func(e E) bool) {
+	return func(yield func(e E) bool) {
+		for _, a := range es {
+			if filter(a) {
+				if !yield(a) {
+					break
+				}
+			}
+		}
+	}
+}
+
+func Strings[E any](lens func(E) string, es ...E) []string {
+	return slices.Collect(func(yield func(string) bool) {
+		for _, e := range es {
+			if !yield(lens(e)) {
+				break
+			}
+		}
+	})
 }

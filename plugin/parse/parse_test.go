@@ -22,13 +22,13 @@ import (
 )
 
 func TestSplitNamePrefixType(t *testing.T) {
-	require.Equal(t, parse.Input{File: "a.xml", Typ: "xml"}, parse.SplitNamePrefixType("a.xml"))
-	require.Equal(t, parse.Input{File: "a.xml", Typ: "xml"}, parse.SplitNamePrefixType("a.xml:"))
-	require.Equal(t, parse.Input{File: "a.xml", Typ: ""}, parse.SplitNamePrefixType("a.xml::"))
-	require.Equal(t, parse.Input{File: "a.xml", Alias: "d", Typ: "xml"}, parse.SplitNamePrefixType("a.xml:d"))
-	require.Equal(t, parse.Input{File: "a.config", Alias: "d", Typ: "xml"}, parse.SplitNamePrefixType("a.config:d:xml"))
-	require.Equal(t, parse.Input{File: "a/b/c.config", Alias: "", Typ: "xml"}, parse.SplitNamePrefixType("a/b/c.config::xml"))
-	require.Equal(t, parse.Input{File: "/a/b/c.config", Alias: "", Typ: "xml"}, parse.SplitNamePrefixType("/a/b/c.config::xml"))
-	require.Equal(t, parse.Input{File: "file:///a/b/c.config", Alias: "", Typ: "xml"}, parse.SplitNamePrefixType("file:///a/b/c.config::xml"))
-	require.Equal(t, parse.Input{File: `C:\a\b\c.config`, Alias: "", Typ: "xml"}, parse.SplitNamePrefixType(`C:\a\b\c.config::xml`))
+	require.Equal(t, parse.Input{File: "a.xml", Type: "xml"}, parse.SplitNamePrefixType("a.xml"))
+	require.Equal(t, parse.Input{File: "a.xml", Type: "xml"}, parse.SplitNamePrefixType("a.xml:"))
+	require.Equal(t, parse.Input{File: "a.xml", Type: ""}, parse.SplitNamePrefixType("a.xml::"))
+	require.Equal(t, parse.Input{File: "a.xml", Alias: "d", Type: "xml"}, parse.SplitNamePrefixType("a.xml:d"))
+	require.Equal(t, parse.Input{File: "a.config", Alias: "d", Type: "xml"}, parse.SplitNamePrefixType("a.config:d:xml"))
+	require.Equal(t, parse.Input{File: "a/b/c.config", Alias: "", Type: "xml"}, parse.SplitNamePrefixType("a/b/c.config::xml"))
+	require.Equal(t, parse.Input{File: "/a/b/c.config", Alias: "", Type: "xml"}, parse.SplitNamePrefixType("/a/b/c.config::xml"))
+	require.Equal(t, parse.Input{File: "file:///a/b/c.config", Alias: "", Type: "xml"}, parse.SplitNamePrefixType("file:///a/b/c.config::xml"))
+	require.Equal(t, parse.Input{File: `C:\a\b\c.config`, Alias: "", Type: "xml"}, parse.SplitNamePrefixType(`C:\a\b\c.config::xml`))
 }

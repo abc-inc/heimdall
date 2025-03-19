@@ -1,4 +1,4 @@
-// Copyright 2024 The Heimdall authors
+// Copyright 2025 The Heimdall authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !no_parse && !no_xml
-
 package parse
 
 import (
@@ -24,29 +22,28 @@ import (
 	"github.com/abc-inc/heimdall/cli"
 	"github.com/abc-inc/heimdall/internal"
 	"github.com/abc-inc/heimdall/res"
-	"github.com/clbanning/mxj/v2"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
-type xmlCfg struct {
+type dotenvCfg struct {
 	cli.OutCfg
 }
 
-func NewXMLCmd() *cobra.Command {
-	cfg := xmlCfg{}
-
+func NewDotEnvCmd() *cobra.Command {
+	cfg := dotenvCfg{}
 	cmd := &cobra.Command{
-		Use:     "xml [flags] <file>...",
-		Short:   "Load XML files and process them",
+		Use:     "dotenv [flags] <file>...",
+		Short:   "Load dotenv files and process them",
 		GroupID: cli.FileGroup,
 		Example: heredoc.Doc(`
-			heimdall xml --query 'to_number("web-app"."-version")' WEB-INF/web.xml"
+			heimdall parse .env
 		`),
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			m := make(map[string]any)
+			m := make(map[string]string)
 			for _, f := range args {
-				maps.Copy(m, processXML(f))
+				maps.Copy(m, processDotEnv(f))
 			}
 			cli.Fmtln(m)
 		},
@@ -57,22 +54,14 @@ func NewXMLCmd() *cobra.Command {
 	return cmd
 }
 
-func processXML(name string) map[string]any {
-	return ReadXML(name).Old()
-}
-
-func ReadXML(name string) mxj.Map {
+func processDotEnv(name string) map[string]string {
 	r := internal.Must(res.Open(name))
 	defer func() { _ = r.Close() }()
-	return internal.Must(mxj.NewMapXmlReader(r))
+	return internal.Must(godotenv.Parse(r))
 }
 
 func init() {
-	Decoders["xml"] = func(r io.Reader) (any, error) {
-		m, err := mxj.NewMapXmlReader(r)
-		if m != nil {
-			return m.Old(), err
-		}
-		return nil, err
+	Decoders["env"] = func(r io.Reader) (any, error) {
+		return godotenv.Parse(r)
 	}
 }
