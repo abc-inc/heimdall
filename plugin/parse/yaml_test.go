@@ -26,7 +26,7 @@ import (
 )
 
 func TestNewYAMLCmd(t *testing.T) {
-	got := test.Run(`.jobs.goreleaser.steps | map(select(.name == "Checkout"))[].uses`,
+	got := test.Run(`.jobs.release.steps | map(select(.name == "Checkout"))[].uses`,
 		parse.NewYAMLCmd(), []string{filepath.Join(test.GetRootDir(), ".github", "workflows", "release.yml")})
-	require.Equal(t, "actions/checkout@v3", got)
+	require.Regexp(t, "^actions/checkout@v.+", got)
 }

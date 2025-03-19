@@ -7,9 +7,9 @@ INSTALL_PROGRAM ?= $(INSTALL)
 prefix = /usr/local
 bindir ?= $(prefix)/bin
 
-builddir = bin
-distdir = dist
-tmpdir = tmp
+builddir ?= bin
+distdir ?= dist
+tmpdir ?= tmp
 
 all: test build
 

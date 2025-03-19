@@ -34,7 +34,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const version = "0.0"
+var version = "0.0"
 
 func main() {
 	cli.Version = version
@@ -127,12 +127,15 @@ func presetFlags(cmd *cobra.Command) {
 func versionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "version",
-		Short:   "Show Heimdall version",
+		Short:   "Show version information",
 		GroupID: cli.HeimdallGroup,
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			t, rev := "", ""
 			if info, ok := debug.ReadBuildInfo(); ok {
+				if info.Main.Version != "" && info.Main.Version != "devel" {
+					version = info.Main.Version
+				}
 				for _, s := range info.Settings {
 					if s.Key == "vcs.revision" {
 						rev = s.Value
@@ -142,8 +145,8 @@ func versionCmd() *cobra.Command {
 				}
 			}
 
-			if len(rev) > 10 {
-				_, _ = cli.Msg(fmt.Sprintf("Heimdall version %s (Git commit: %s, Date: %s)\n", version, rev[0:10], t))
+			if len(rev) > 12 {
+				_, _ = cli.Msg(fmt.Sprintf("Heimdall version %s (Git commit: %s, Date: %s)\n", version, rev[0:12], t))
 			} else {
 				_, _ = cli.Msg(fmt.Sprintf("Heimdall version %s\n", version))
 			}

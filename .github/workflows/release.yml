@@ -2,30 +2,42 @@ name: Release
 
 on:
   release:
-    types: [created]
+    types: [ created ]
   workflow_dispatch:
 
 jobs:
-  goreleaser:
+  release:
     name: Release
     runs-on: ubuntu-latest
+    env:
+      VERSION: "${{ github.ref_name }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
-          go-version: '>=1.21.0'
+          go-version-file: go.mod
           cache: true
       - name: Test
         run: make test
-      - name: Generate
-        run: make build
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
-        with:
-          args: release --rm-dist
+      - name: Build
+        run: |
+          name="${{ github.repository }}"
+          name="${name##*/}"
+          for os_arch in darwin/arm64 linux/amd64 windows/amd64; do
+            echo "::group::Building ${os_arch}"
+            export GOOS="${os_arch%/*}" GOARCH="${os_arch#*/}"
+            dist="${os_arch//\//_}"
+            dist="${dist/darwin/macOS}"
+            dist="${dist/amd64/x86_64}"
+
+            builddir="dist/${dist}" make build
+            mv "dist/${dist}/"* "dist/${dist}/${name}_${VERSION}_${dist}$(go env GOEXE)"
+            echo "::endgroup::"
+          done
+      - name: Release
+        run: |
+          gh release upload "${{ github.ref_name }}" dist/*_*/*_${VERSION}_* --clobber
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
